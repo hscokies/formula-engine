@@ -1,0 +1,28 @@
+{
+    "Pages": {
+        "Login": {
+            "Title": "Sign in"
+        },
+        "Register": {
+            "Title": "Sign up"
+        },
+        "ViewFormulas": {
+            "Title": "View available formulas"
+        },
+        "ViewCalculations": {
+            "Title": "View submitted calculations"
+        },
+        "CreateFormula": {
+            "Title": "Create new formula"
+        },
+        "ConfigureFormula": {
+            "Title": "Configure formula"
+        },
+        "Formula": {
+            "Title": "Formula"
+        }
+    },
+    "Common": {
+        "ProjectName": "Formula engine"
+    }
+}
