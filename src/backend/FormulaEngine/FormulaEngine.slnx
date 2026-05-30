@@ -1,0 +1,9 @@
+<Solution>
+  <Project Path="Application.API/Application.API.csproj" />
+  <Project Path="Domain/Domain.csproj" />
+  <Project Path="Infrastructure.AppSettings/Infrastructure.AppSettings.csproj" />
+  <Project Path="Infrastructure.Logging/Infrastructure.Logging.csproj" />
+  <Project Path="Infrastructure.Persistence/Infrastructure.Persistence.csproj" />
+  <Project Path="Infrastructure.Services/Infrastructure.Services.csproj" />
+  <Project Path="Web.API\Web.API.csproj" />
+</Solution>
