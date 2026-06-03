@@ -1,0 +1,738 @@
+Index: Application.API/Application.API.csproj
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><Project Sdk=\"Microsoft.NET.Sdk\">\n\n    <PropertyGroup>\n        <TargetFramework>net10.0</TargetFramework>\n        <ImplicitUsings>enable</ImplicitUsings>\n        <Nullable>enable</Nullable>\n    </PropertyGroup>\n\n    <ItemGroup>\n      <ProjectReference Include=\"..\\Infrastructure.AppSettings\\Infrastructure.AppSettings.csproj\" />\n      <ProjectReference Include=\"..\\Infrastructure.Logging\\Infrastructure.Logging.csproj\" />\n      <ProjectReference Include=\"..\\Infrastructure.Persistence\\Infrastructure.Persistence.csproj\" />\n      <ProjectReference Include=\"..\\Infrastructure.Services\\Infrastructure.Services.csproj\" />\n    </ItemGroup>\n\n</Project>\n
+===================================================================
+diff --git a/Application.API/Application.API.csproj b/Application.API/Application.API.csproj
+--- a/Application.API/Application.API.csproj	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Application.API/Application.API.csproj	(date 1780507052853)
+@@ -10,7 +10,6 @@
+       <ProjectReference Include="..\Infrastructure.AppSettings\Infrastructure.AppSettings.csproj" />
+       <ProjectReference Include="..\Infrastructure.Logging\Infrastructure.Logging.csproj" />
+       <ProjectReference Include="..\Infrastructure.Persistence\Infrastructure.Persistence.csproj" />
+-      <ProjectReference Include="..\Infrastructure.Services\Infrastructure.Services.csproj" />
+     </ItemGroup>
+ 
+ </Project>
+Index: Domain/Expressions/UnaryExpression.cs
+===================================================================
+diff --git a/Domain/Expressions/UnaryExpression.cs b/Domain/Expressions/UnaryOperation.cs
+rename from Domain/Expressions/UnaryExpression.cs
+rename to Domain/Expressions/UnaryOperation.cs
+--- a/Domain/Expressions/UnaryExpression.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Expressions/UnaryOperation.cs	(date 1780221049570)
+@@ -1,11 +1,14 @@
++using System.Text.Json.Serialization;
++
+ namespace Domain.Expressions;
+ 
+-public sealed class UnaryExpression : IOperand
++public sealed class UnaryOperation : IOperand
+ {
+     public IOperand Operand { get; set; }
+     public UnaryOperator Operator { get; set; }
+ }
+ 
++[JsonConverter(typeof(JsonStringEnumConverter))]
+ public enum UnaryOperator
+ {
+     Abs,
+Index: Domain/Expressions/Operand.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using System.Text.Json.Serialization;\n\nnamespace Domain.Expressions;\n\n[JsonPolymorphic]\n[JsonDerivedType(typeof(FieldOperand), \"field\")]\n[JsonDerivedType(typeof(DecimalValueOperand), \"decimalValue\")]\n[JsonDerivedType(typeof(DecimalValueOperand), \"integerValue\")]\n[JsonDerivedType(typeof(BinaryOperation), \"binaryOperation\")]\n[JsonDerivedType(typeof(UnaryOperator), \"unaryOperator\")]\n\npublic interface IOperand;\n\npublic class FieldOperand : IOperand\n{\n    public required string InternalName { get; set; }\n}\n\npublic sealed class DecimalValueOperand : IOperand\n{\n    public required decimal Value { get; set; }\n}\n\npublic sealed class IntegerValueOperand : IOperand\n{\n    public required int Value { get; set; }\n} \n
+===================================================================
+diff --git a/Domain/Expressions/Operand.cs b/Domain/Expressions/Operand.cs
+--- a/Domain/Expressions/Operand.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Expressions/Operand.cs	(date 1780459745425)
+@@ -5,23 +5,13 @@
+ [JsonPolymorphic]
+ [JsonDerivedType(typeof(FieldOperand), "field")]
+ [JsonDerivedType(typeof(DecimalValueOperand), "decimalValue")]
+-[JsonDerivedType(typeof(DecimalValueOperand), "integerValue")]
++[JsonDerivedType(typeof(IntegerValueOperand), "integerValue")]
+ [JsonDerivedType(typeof(BinaryOperation), "binaryOperation")]
+-[JsonDerivedType(typeof(UnaryOperator), "unaryOperator")]
++[JsonDerivedType(typeof(UnaryOperation), "unaryOperator")]
+ 
+-public interface IOperand;
++public abstract class IOperand;
+ 
+ public class FieldOperand : IOperand
+ {
+     public required string InternalName { get; set; }
+ }
+-
+-public sealed class DecimalValueOperand : IOperand
+-{
+-    public required decimal Value { get; set; }
+-}
+-
+-public sealed class IntegerValueOperand : IOperand
+-{
+-    public required int Value { get; set; }
+-} 
+Index: FormulaEngine.slnx
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><Solution>\n  <Project Path=\"Application.API/Application.API.csproj\" />\n  <Project Path=\"Domain/Domain.csproj\" />\n  <Project Path=\"Infrastructure.AppSettings/Infrastructure.AppSettings.csproj\" />\n  <Project Path=\"Infrastructure.Logging/Infrastructure.Logging.csproj\" />\n  <Project Path=\"Infrastructure.Persistence/Infrastructure.Persistence.csproj\" />\n  <Project Path=\"Infrastructure.Services/Infrastructure.Services.csproj\" />\n  <Project Path=\"Web.API\\Web.API.csproj\" />\n</Solution>\n
+===================================================================
+diff --git a/FormulaEngine.slnx b/FormulaEngine.slnx
+--- a/FormulaEngine.slnx	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/FormulaEngine.slnx	(date 1780507052770)
+@@ -4,6 +4,5 @@
+   <Project Path="Infrastructure.AppSettings/Infrastructure.AppSettings.csproj" />
+   <Project Path="Infrastructure.Logging/Infrastructure.Logging.csproj" />
+   <Project Path="Infrastructure.Persistence/Infrastructure.Persistence.csproj" />
+-  <Project Path="Infrastructure.Services/Infrastructure.Services.csproj" />
+   <Project Path="Web.API\Web.API.csproj" />
+ </Solution>
+Index: Domain/Expressions/BinaryExpression.cs
+===================================================================
+diff --git a/Domain/Expressions/BinaryExpression.cs b/Domain/Expressions/BinaryOperation.cs
+rename from Domain/Expressions/BinaryExpression.cs
+rename to Domain/Expressions/BinaryOperation.cs
+--- a/Domain/Expressions/BinaryExpression.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Expressions/BinaryOperation.cs	(date 1780221059400)
+@@ -1,3 +1,5 @@
++using System.Text.Json.Serialization;
++
+ namespace Domain.Expressions;
+ 
+ public class BinaryOperation : IOperand
+@@ -7,6 +9,7 @@
+     public required IOperand Right { get; set; }
+ }
+ 
++[JsonConverter(typeof(JsonStringEnumConverter))]
+ public enum BinaryOperator
+ {
+     Addition,
+Index: Infrastructure.Persistence/Migrations/DataContextModelSnapshot.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>// <auto-generated />\nusing System;\nusing System.Collections.Generic;\nusing Domain.Expressions;\nusing Domain.Formulas;\nusing Infrastructure.Persistence.Contexts;\nusing Microsoft.AspNetCore.Identity;\nusing Microsoft.EntityFrameworkCore;\nusing Microsoft.EntityFrameworkCore.Infrastructure;\nusing Microsoft.EntityFrameworkCore.Storage.ValueConversion;\nusing Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;\n\n#nullable disable\n\nnamespace Infrastructure.Persistence.Migrations\n{\n    [DbContext(typeof(DataContext))]\n    partial class DataContextModelSnapshot : ModelSnapshot\n    {\n        protected override void BuildModel(ModelBuilder modelBuilder)\n        {\n#pragma warning disable 612, 618\n            modelBuilder\n                .HasAnnotation(\"ProductVersion\", \"10.0.3\")\n                .HasAnnotation(\"Relational:MaxIdentifierLength\", 63);\n\n            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);\n\n            modelBuilder.Entity(\"Domain.Formulas.Formula\", b =>\n                {\n                    b.Property<Guid>(\"Id\")\n                        .ValueGeneratedOnAdd()\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"id\");\n\n                    b.Property<IOperand>(\"Expression\")\n                        .IsRequired()\n                        .HasColumnType(\"jsonb\")\n                        .HasColumnName(\"expression\");\n\n                    b.Property<ICollection<FormulaField>>(\"FieldsConfiguration\")\n                        .IsRequired()\n                        .HasColumnType(\"jsonb\")\n                        .HasColumnName(\"fields_configuration\");\n\n                    b.Property<string>(\"Name\")\n                        .IsRequired()\n                        .HasMaxLength(255)\n                        .HasColumnType(\"character varying(255)\")\n                        .HasColumnName(\"name\");\n\n                    b.HasKey(\"Id\")\n                        .HasName(\"pk_formulas\");\n\n                    b.HasIndex(\"Name\")\n                        .IsUnique()\n                        .HasDatabaseName(\"ix_formulas_name\");\n\n                    b.ToTable(\"formulas\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Domain.Users.User\", b =>\n                {\n                    b.Property<Guid>(\"Id\")\n                        .ValueGeneratedOnAdd()\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"id\");\n\n                    b.Property<int>(\"AccessFailedCount\")\n                        .HasColumnType(\"integer\")\n                        .HasColumnName(\"access_failed_count\");\n\n                    b.Property<string>(\"ConcurrencyStamp\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"concurrency_stamp\");\n\n                    b.Property<string>(\"Email\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"email\");\n\n                    b.Property<bool>(\"EmailConfirmed\")\n                        .HasColumnType(\"boolean\")\n                        .HasColumnName(\"email_confirmed\");\n\n                    b.Property<bool>(\"LockoutEnabled\")\n                        .HasColumnType(\"boolean\")\n                        .HasColumnName(\"lockout_enabled\");\n\n                    b.Property<DateTimeOffset?>(\"LockoutEnd\")\n                        .HasColumnType(\"timestamp with time zone\")\n                        .HasColumnName(\"lockout_end\");\n\n                    b.Property<string>(\"NormalizedEmail\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"normalized_email\");\n\n                    b.Property<string>(\"NormalizedUserName\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"normalized_user_name\");\n\n                    b.Property<string>(\"PasswordHash\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"password_hash\");\n\n                    b.Property<string>(\"PhoneNumber\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"phone_number\");\n\n                    b.Property<bool>(\"PhoneNumberConfirmed\")\n                        .HasColumnType(\"boolean\")\n                        .HasColumnName(\"phone_number_confirmed\");\n\n                    b.Property<string>(\"SecurityStamp\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"security_stamp\");\n\n                    b.Property<bool>(\"TwoFactorEnabled\")\n                        .HasColumnType(\"boolean\")\n                        .HasColumnName(\"two_factor_enabled\");\n\n                    b.Property<string>(\"UserName\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"user_name\");\n\n                    b.HasKey(\"Id\")\n                        .HasName(\"pk_users\");\n\n                    b.ToTable(\"users\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>\", b =>\n                {\n                    b.Property<Guid>(\"Id\")\n                        .ValueGeneratedOnAdd()\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"id\");\n\n                    b.Property<string>(\"ConcurrencyStamp\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"concurrency_stamp\");\n\n                    b.Property<string>(\"Name\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"name\");\n\n                    b.Property<string>(\"NormalizedName\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"normalized_name\");\n\n                    b.HasKey(\"Id\")\n                        .HasName(\"pk_roles\");\n\n                    b.ToTable(\"roles\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>\", b =>\n                {\n                    b.Property<int>(\"Id\")\n                        .ValueGeneratedOnAdd()\n                        .HasColumnType(\"integer\")\n                        .HasColumnName(\"id\");\n\n                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>(\"Id\"));\n\n                    b.Property<string>(\"ClaimType\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"claim_type\");\n\n                    b.Property<string>(\"ClaimValue\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"claim_value\");\n\n                    b.Property<Guid>(\"RoleId\")\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"role_id\");\n\n                    b.HasKey(\"Id\")\n                        .HasName(\"pk_role_claims\");\n\n                    b.ToTable(\"role_claims\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>\", b =>\n                {\n                    b.Property<int>(\"Id\")\n                        .ValueGeneratedOnAdd()\n                        .HasColumnType(\"integer\")\n                        .HasColumnName(\"id\");\n\n                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>(\"Id\"));\n\n                    b.Property<string>(\"ClaimType\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"claim_type\");\n\n                    b.Property<string>(\"ClaimValue\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"claim_value\");\n\n                    b.Property<Guid>(\"UserId\")\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"user_id\");\n\n                    b.HasKey(\"Id\")\n                        .HasName(\"pk_user_claims\");\n\n                    b.ToTable(\"user_claims\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>\", b =>\n                {\n                    b.Property<Guid>(\"UserId\")\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"user_id\");\n\n                    b.Property<string>(\"LoginProvider\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"login_provider\");\n\n                    b.Property<string>(\"ProviderKey\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"provider_key\");\n\n                    b.Property<string>(\"ProviderDisplayName\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"provider_display_name\");\n\n                    b.HasKey(\"UserId\", \"LoginProvider\", \"ProviderKey\")\n                        .HasName(\"pk_user_logins\");\n\n                    b.ToTable(\"user_logins\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Microsoft.AspNetCore.Identity.IdentityUserPasskey<System.Guid>\", b =>\n                {\n                    b.Property<Guid>(\"UserId\")\n                        .ValueGeneratedOnAdd()\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"user_id\");\n\n                    b.Property<byte[]>(\"CredentialId\")\n                        .IsRequired()\n                        .HasColumnType(\"bytea\")\n                        .HasColumnName(\"credential_id\");\n\n                    b.Property<IdentityPasskeyData>(\"Data\")\n                        .IsRequired()\n                        .HasColumnType(\"jsonb\")\n                        .HasColumnName(\"data\");\n\n                    b.HasKey(\"UserId\")\n                        .HasName(\"pk_user_passkeys\");\n\n                    b.ToTable(\"user_passkeys\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>\", b =>\n                {\n                    b.Property<Guid>(\"UserId\")\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"user_id\");\n\n                    b.Property<Guid>(\"RoleId\")\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"role_id\");\n\n                    b.HasKey(\"UserId\", \"RoleId\")\n                        .HasName(\"pk_user_roles\");\n\n                    b.ToTable(\"user_roles\", (string)null);\n                });\n\n            modelBuilder.Entity(\"Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>\", b =>\n                {\n                    b.Property<Guid>(\"UserId\")\n                        .HasColumnType(\"uuid\")\n                        .HasColumnName(\"user_id\");\n\n                    b.Property<string>(\"LoginProvider\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"login_provider\");\n\n                    b.Property<string>(\"Name\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"name\");\n\n                    b.Property<string>(\"Value\")\n                        .HasColumnType(\"text\")\n                        .HasColumnName(\"value\");\n\n                    b.HasKey(\"UserId\", \"LoginProvider\", \"Name\")\n                        .HasName(\"pk_user_tokens\");\n\n                    b.ToTable(\"user_tokens\", (string)null);\n                });\n#pragma warning restore 612, 618\n        }\n    }\n}\n
+===================================================================
+diff --git a/Infrastructure.Persistence/Migrations/DataContextModelSnapshot.cs b/Infrastructure.Persistence/Migrations/DataContextModelSnapshot.cs
+--- a/Infrastructure.Persistence/Migrations/DataContextModelSnapshot.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Infrastructure.Persistence/Migrations/DataContextModelSnapshot.cs	(date 1780508857102)
+@@ -26,6 +26,37 @@
+ 
+             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+ 
++            modelBuilder.Entity("Domain.Formulas.EvaluationSubmission", b =>
++                {
++                    b.Property<Guid>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("uuid")
++                        .HasColumnName("id");
++
++                    b.Property<Guid>("FormulaId")
++                        .HasColumnType("uuid")
++                        .HasColumnName("formula_id");
++
++                    b.Property<decimal>("Result")
++                        .HasColumnType("numeric")
++                        .HasColumnName("result");
++
++                    b.Property<Guid>("UserId")
++                        .HasColumnType("uuid")
++                        .HasColumnName("user_id");
++
++                    b.HasKey("Id")
++                        .HasName("pk_submissions");
++
++                    b.HasIndex("FormulaId")
++                        .HasDatabaseName("ix_submissions_formula_id");
++
++                    b.HasIndex("UserId")
++                        .HasDatabaseName("ix_submissions_user_id");
++
++                    b.ToTable("submissions", (string)null);
++                });
++
+             modelBuilder.Entity("Domain.Formulas.Formula", b =>
+                 {
+                     b.Property<Guid>("Id")
+@@ -44,17 +75,28 @@
+                         .HasColumnName("fields_configuration");
+ 
+                     b.Property<string>("Name")
++                        .IsRequired()
++                        .HasColumnType("text")
++                        .HasColumnName("name");
++
++                    b.Property<string>("NameNormalized")
+                         .IsRequired()
+                         .HasMaxLength(255)
+                         .HasColumnType("character varying(255)")
+-                        .HasColumnName("name");
++                        .HasColumnName("name_normalized");
++
++                    b.Property<Guid>("OwnerId")
++                        .HasColumnType("uuid")
++                        .HasColumnName("owner_id");
+ 
+                     b.HasKey("Id")
+                         .HasName("pk_formulas");
+ 
+-                    b.HasIndex("Name")
+-                        .IsUnique()
+-                        .HasDatabaseName("ix_formulas_name");
++                    b.HasIndex("NameNormalized")
++                        .HasDatabaseName("ix_formulas_name_normalized");
++
++                    b.HasIndex("OwnerId")
++                        .HasDatabaseName("ix_formulas_owner_id");
+ 
+                     b.ToTable("formulas", (string)null);
+                 });
+@@ -151,6 +193,15 @@
+                         .HasName("pk_roles");
+ 
+                     b.ToTable("roles", (string)null);
++
++                    b.HasData(
++                        new
++                        {
++                            Id = new Guid("7ceb50b3-2d36-4a76-a8c7-ae2d5a924d4c"),
++                            ConcurrencyStamp = "1549794e-2db9-4e5b-bc8d-798627fc4d37",
++                            Name = "Admin",
++                            NormalizedName = "ADMIN"
++                        });
+                 });
+ 
+             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+@@ -267,6 +318,9 @@
+                     b.HasKey("UserId", "RoleId")
+                         .HasName("pk_user_roles");
+ 
++                    b.HasIndex("RoleId")
++                        .HasDatabaseName("ix_user_roles_role_id");
++
+                     b.ToTable("user_roles", (string)null);
+                 });
+ 
+@@ -293,6 +347,49 @@
+ 
+                     b.ToTable("user_tokens", (string)null);
+                 });
++
++            modelBuilder.Entity("Domain.Formulas.EvaluationSubmission", b =>
++                {
++                    b.HasOne("Domain.Formulas.Formula", "Formula")
++                        .WithMany()
++                        .HasForeignKey("FormulaId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired()
++                        .HasConstraintName("fk_submissions_formulas_formula_id");
++
++                    b.HasOne("Domain.Users.User", "User")
++                        .WithMany()
++                        .HasForeignKey("UserId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired()
++                        .HasConstraintName("fk_submissions_users_user_id");
++
++                    b.Navigation("Formula");
++
++                    b.Navigation("User");
++                });
++
++            modelBuilder.Entity("Domain.Formulas.Formula", b =>
++                {
++                    b.HasOne("Domain.Users.User", "Owner")
++                        .WithMany()
++                        .HasForeignKey("OwnerId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired()
++                        .HasConstraintName("fk_formulas_users_owner_id");
++
++                    b.Navigation("Owner");
++                });
++
++            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
++                {
++                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
++                        .WithMany()
++                        .HasForeignKey("RoleId")
++                        .OnDelete(DeleteBehavior.Cascade)
++                        .IsRequired()
++                        .HasConstraintName("fk_user_roles_roles_role_id");
++                });
+ #pragma warning restore 612, 618
+         }
+     }
+Index: Domain/Expressions/ExpressionEvaluator.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>namespace Domain.Expressions;\n\npublic static class AstEvaluator\n{\n    public static decimal Evaluate(\n        IOperand expression,\n        IReadOnlyDictionary<string, object> scope)\n    {\n        return EvaluateInternal(expression, scope);\n    }\n\n    private static decimal EvaluateInternal(\n        IOperand operand,\n        IReadOnlyDictionary<string, object> scope)\n    {\n        return operand switch\n        {\n            IntegerValueOperand integer => integer.Value,\n            DecimalValueOperand @decimal => @decimal.Value,\n            FieldOperand field => ResolveField(field, scope),\n            UnaryExpression unary => EvaluateUnary(unary, scope),\n            BinaryOperation binary => EvaluateBinary(binary, scope),\n            _ => throw new NotSupportedException($\"Unsupported operand: {operand.GetType().Name}\")\n        };\n    }\n\n    private static decimal ResolveField(\n        FieldOperand field,\n        IReadOnlyDictionary<string, object> scope)\n    {\n        if (!scope.TryGetValue(\n                field.InternalName,\n                out var value))\n        {\n            throw new UnknownFieldException(field.InternalName);\n        }\n\n        return value switch\n        {\n            int i => i,\n            decimal d => d,\n            _ => throw new UnsupportedValueTypeException(value.GetType().Name)\n        };\n    }\n\n    private static decimal EvaluateBinary(\n        BinaryOperation operation,\n        IReadOnlyDictionary<string, object> scope)\n    {\n        var left = EvaluateInternal(\n            operation.Left,\n            scope);\n\n        var right = EvaluateInternal(\n            operation.Right,\n            scope);\n\n        return operation.Operator switch\n        {\n            BinaryOperator.Addition => left + right,\n            BinaryOperator.Subtraction => left - right,\n            BinaryOperator.Multiplication => left * right,\n            BinaryOperator.Division => left / right,\n            BinaryOperator.Modulo => left % right,\n\n            BinaryOperator.Exponent\n                => (decimal)Math.Pow(\n                    (double)left,\n                    (double)right),\n\n            _ => throw new NotSupportedException(\n                $\"Unsupported operator: {operation.Operator}\")\n        };\n    }\n\n    private static decimal EvaluateUnary(\n        UnaryExpression unary,\n        IReadOnlyDictionary<string, object> scope)\n    {\n        var value = EvaluateInternal(\n            unary.Operand,\n            scope);\n\n        return unary.Operator switch\n        {\n            UnaryOperator.Abs => Math.Abs(value),\n            UnaryOperator.Sqrt => (decimal)Math.Sqrt((double)value),\n            UnaryOperator.Ceil => Math.Ceiling(value),\n            UnaryOperator.Floor => Math.Floor(value),\n            UnaryOperator.Round => Math.Round(value),\n            UnaryOperator.Negate => -value,\n\n            _ => throw new NotSupportedException(\n                $\"Unsupported unary operator: {unary.Operator}\")\n        };\n    }\n}\n
+===================================================================
+diff --git a/Domain/Expressions/ExpressionEvaluator.cs b/Domain/Expressions/ExpressionEvaluator.cs
+--- a/Domain/Expressions/ExpressionEvaluator.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Expressions/ExpressionEvaluator.cs	(date 1780291462008)
+@@ -18,9 +18,9 @@
+             IntegerValueOperand integer => integer.Value,
+             DecimalValueOperand @decimal => @decimal.Value,
+             FieldOperand field => ResolveField(field, scope),
+-            UnaryExpression unary => EvaluateUnary(unary, scope),
++            UnaryOperation unary => EvaluateUnary(unary, scope),
+             BinaryOperation binary => EvaluateBinary(binary, scope),
+-            _ => throw new NotSupportedException($"Unsupported operand: {operand.GetType().Name}")
++            _ => throw new UnsupportedOperandException(operand.GetType())
+         };
+     }
+ 
+@@ -68,20 +68,19 @@
+                     (double)left,
+                     (double)right),
+ 
+-            _ => throw new NotSupportedException(
+-                $"Unsupported operator: {operation.Operator}")
++            _ => throw new UnsupportedOperatorException($"Unsupported binary operator: {operation.Operator}")
+         };
+     }
+ 
+     private static decimal EvaluateUnary(
+-        UnaryExpression unary,
++        UnaryOperation operation,
+         IReadOnlyDictionary<string, object> scope)
+     {
+         var value = EvaluateInternal(
+-            unary.Operand,
++            operation.Operand,
+             scope);
+ 
+-        return unary.Operator switch
++        return operation.Operator switch
+         {
+             UnaryOperator.Abs => Math.Abs(value),
+             UnaryOperator.Sqrt => (decimal)Math.Sqrt((double)value),
+@@ -89,9 +88,7 @@
+             UnaryOperator.Floor => Math.Floor(value),
+             UnaryOperator.Round => Math.Round(value),
+             UnaryOperator.Negate => -value,
+-
+-            _ => throw new NotSupportedException(
+-                $"Unsupported unary operator: {unary.Operator}")
++            _ => throw new UnsupportedOperatorException($"Unsupported unary operator: {operation.Operator}")
+         };
+     }
+ }
+Index: Domain/Expressions/Exceptions.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Domain.Tokens;\n\nnamespace Domain.Expressions;\n\npublic sealed class UnexpectedTokenException : Exception\n{\n    public TokenType? Expected { get; }\n    public TokenType Actual { get; }\n\n    public UnexpectedTokenException(TokenType expected, TokenType actual) : base($\"Expected: {expected}, Actual: {actual}\")\n    {\n        Expected = expected;\n        Actual = actual;\n    }\n\n    public UnexpectedTokenException(TokenType actual) : base($\"Unexpected token: {actual}\")\n    {\n        Actual = actual;\n    }\n}\n\npublic sealed class UnexpectedIdentifierException(string identifier) : Exception($\"Unexpected identifier: '{identifier}'\")\n{\n    public string Identifier => identifier;\n}\n\npublic sealed class UnknownFieldException(string internalName) : Exception\n{\n    public string FieldName => internalName;\n}\n\npublic sealed class UnsupportedValueTypeException(string valueType) : Exception\n{\n    public string ValueType => valueType;\n}\n
+===================================================================
+diff --git a/Domain/Expressions/Exceptions.cs b/Domain/Expressions/Exceptions.cs
+--- a/Domain/Expressions/Exceptions.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Expressions/Exceptions.cs	(date 1780291381498)
+@@ -33,3 +33,10 @@
+ {
+     public string ValueType => valueType;
+ }
++
++public sealed class UnsupportedOperandException(Type type) : Exception
++{
++    public Type OperandType => type;
++}
++
++public sealed class UnsupportedOperatorException(string message) : Exception(message);
+Index: Domain/Expressions/AstBuilder.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using System.Globalization;\nusing Domain.Tokens;\n\nnamespace Domain.Expressions;\n\npublic sealed class AstBuilder(List<Token> tokens)\n{\n    private readonly HashSet<string> _fields = [];\n    public IReadOnlyCollection<string> Fields => _fields;\n    \n    private int _position;\n\n    private Token Current => tokens[_position];\n    private Token Previous => tokens[_position - 1];\n    private bool IsEof => Current.Type is TokenType.Eof;\n\n    \n    public IOperand Build()\n    {\n        _fields.Clear();\n        var expression = ParseExpression();\n        return IsEof ? expression : throw new UnexpectedTokenException(TokenType.Eof, Current.Type);\n    }\n\n    private bool Match(params TokenType[] types)\n    {\n        if (!types.Any(Matches))\n        {\n            return false;\n        }\n\n        Advance();\n        return true;\n    }\n\n    private void Consume(TokenType type)\n    {\n        if (!Matches(type))\n        {\n            throw new UnexpectedTokenException(type, Current.Type);\n        }\n\n        Advance();\n    }\n\n    private bool Matches(TokenType type)\n    {\n        if (IsEof)\n        {\n            return false;\n        }\n\n        return Current.Type == type;\n    }\n\n    private void Advance()\n    {\n        if (!IsEof)\n        {\n            _position++;\n        }\n    }\n\n    private IOperand ParseExpression()\n    {\n        return ParseWeakOperator();\n    }\n\n    private IOperand ParseWeakOperator()\n    {\n        var left = ParseStrongOperator();\n\n\n        while (Match(TokenType.Plus, TokenType.Minus))\n        {\n            var op = Previous;\n\n            left = new BinaryOperation\n            {\n                Left = left,\n                Operator = op.Type switch\n                {\n                    TokenType.Plus => BinaryOperator.Addition,\n                    TokenType.Minus => BinaryOperator.Subtraction,\n                    _ => throw new UnexpectedTokenException(op.Type)\n                },\n                Right = ParseStrongOperator()\n            };\n        }\n\n        return left;\n    }\n\n    /// <summary>\n    /// Parse complex operation (*, /, %)\n    /// </summary>\n    /// <returns></returns>\n    /// <exception cref=\"InvalidOperationException\"></exception>\n    private IOperand ParseStrongOperator()\n    {\n        var left = ParseExponent();\n\n        while (Match(\n                   TokenType.Star,\n                   TokenType.Slash,\n                   TokenType.Modulo))\n        {\n            var op = Previous;\n\n            left = new BinaryOperation\n            {\n                Left = left,\n                Operator = op.Type switch\n                {\n                    TokenType.Star => BinaryOperator.Multiplication,\n                    TokenType.Slash => BinaryOperator.Division,\n                    TokenType.Modulo => BinaryOperator.Modulo,\n                    _ => throw new UnexpectedTokenException(op.Type)\n                },\n                Right = ParseUnary()\n            };\n        }\n\n        return left;\n    }\n\n    /// <summary>\n    /// Performs Exponent parse with following priority: 2 ^ 3 ^ 2 => 2 ^ (3 ^ 2)\n    /// </summary>\n    private IOperand ParseExponent()\n    {\n        var left = ParseUnary();\n\n        if (Match(TokenType.Caret))\n        {\n            var right = ParseExponent();\n\n            left = new BinaryOperation\n            {\n                Left = left,\n                Operator = BinaryOperator.Exponent,\n                Right = right\n            };\n        }\n\n        return left;\n    }\n\n    /// <summary>\n    /// Tries to parse unary expression like negation & function calls\n    /// </summary>\n    private IOperand ParseUnary()\n    {\n        if (Match(TokenType.Minus))\n        {\n            return new UnaryExpression\n            {\n                Operator = UnaryOperator.Negate,\n                Operand = ParseUnary()\n            };\n        }\n\n        if (!Match(TokenType.Identifier))\n        {\n            return ParsePrimary();\n        }\n\n        var identifier = Previous.Value;\n\n        // not function call / parenthesis\n        if (!Match(TokenType.LeftParenthesis))\n        {\n            _fields.Add(identifier);\n            return new FieldOperand\n            {\n                InternalName = identifier\n            };\n        }\n\n        var operand = ParseExpression();\n\n        Consume(TokenType.RightParenthesis);\n\n        return new UnaryExpression\n        {\n            Operand = operand,\n            Operator = identifier.ToLower() switch\n            {\n                \"abs\" => UnaryOperator.Abs,\n                \"sqrt\" => UnaryOperator.Sqrt,\n                \"ceil\" => UnaryOperator.Ceil,\n                \"floor\" => UnaryOperator.Floor,\n                \"round\" => UnaryOperator.Round,\n                _ => throw new UnexpectedIdentifierException(identifier)\n            }\n        };\n    }\n\n    /// <summary>\n    /// Parse the highest priority tokens, like numbers and parenthesis expressions\n    /// </summary>\n    /// <returns></returns>\n    /// <exception cref=\"Exception\"></exception>\n    private IOperand ParsePrimary()\n    {\n        if (Match(TokenType.Integer))\n        {\n            return new IntegerValueOperand\n            {\n                Value = int.Parse(\n                    Previous.Value,\n                    CultureInfo.InvariantCulture)\n            };\n        }\n\n        if (Match(TokenType.Decimal))\n        {\n            return new DecimalValueOperand\n            {\n                Value = decimal.Parse(\n                    Previous.Value,\n                    CultureInfo.InvariantCulture)\n            };\n        }\n\n        if (Match(TokenType.LeftParenthesis))\n        {\n            var expression = ParseExpression();\n\n            Consume(TokenType.RightParenthesis);\n\n            return expression;\n        }\n\n        throw new UnexpectedTokenException(Current.Type);\n    }\n}\n
+===================================================================
+diff --git a/Domain/Expressions/AstBuilder.cs b/Domain/Expressions/AstBuilder.cs
+--- a/Domain/Expressions/AstBuilder.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Expressions/AstBuilder.cs	(date 1780220951135)
+@@ -153,7 +153,7 @@
+     {
+         if (Match(TokenType.Minus))
+         {
+-            return new UnaryExpression
++            return new UnaryOperation
+             {
+                 Operator = UnaryOperator.Negate,
+                 Operand = ParseUnary()
+@@ -181,7 +181,7 @@
+ 
+         Consume(TokenType.RightParenthesis);
+ 
+-        return new UnaryExpression
++        return new UnaryOperation
+         {
+             Operand = operand,
+             Operator = identifier.ToLower() switch
+Index: Web.API/appsettings.Development.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\n  \"DbSettings\": {\n    \"ConnectionString\": \"User ID=postgres;Password=postgres;Host=localhost;Port=5432;Database=dungeon_editor;Pooling=true;Timeout=300;CommandTimeout=300\"\n  },\n  \"JsonWebToken\": {\n    \"Key\": \"\",\n    \"Issuer\": \"\"\n  }\n}\n
+===================================================================
+diff --git a/Web.API/appsettings.Development.json b/Web.API/appsettings.Development.json
+--- a/Web.API/appsettings.Development.json	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Web.API/appsettings.Development.json	(date 1780214421245)
+@@ -1,9 +1,5 @@
+ {
+   "DbSettings": {
+-    "ConnectionString": "User ID=postgres;Password=postgres;Host=localhost;Port=5432;Database=dungeon_editor;Pooling=true;Timeout=300;CommandTimeout=300"
+-  },
+-  "JsonWebToken": {
+-    "Key": "",
+-    "Issuer": ""
++    "ConnectionString": "User ID=postgres;Password=postgres;Host=localhost;Port=5432;Database=formula_engine;Pooling=true;Timeout=300;CommandTimeout=300"
+   }
+ }
+Index: Domain/Formulas/FormulaField.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>namespace Domain.Formulas;\n\npublic class FormulaField\n{\n    public Guid Id { get; set; }\n\n    public required string InternalName { get; set; }\n    public string? Label { get; set; }\n    public FieldType Type { get; set; }\n}\n\npublic enum FieldType\n{\n    Integer,\n    Decimal,\n}\n
+===================================================================
+diff --git a/Domain/Formulas/FormulaField.cs b/Domain/Formulas/FormulaField.cs
+--- a/Domain/Formulas/FormulaField.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Formulas/FormulaField.cs	(date 1780221412937)
+@@ -1,14 +1,15 @@
++using System.Text.Json.Serialization;
++
+ namespace Domain.Formulas;
+ 
+ public class FormulaField
+ {
+-    public Guid Id { get; set; }
+-
+     public required string InternalName { get; set; }
+     public string? Label { get; set; }
+     public FieldType Type { get; set; }
+ }
+ 
++[JsonConverter(typeof(JsonStringEnumConverter))]
+ public enum FieldType
+ {
+     Integer,
+Index: Web.API/Infrastructure/CustomResults.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Domain.Common;\n\nnamespace Web.API.Infrastructure;\n\ninternal static class CustomResults\n{\n    public static IResult Problem(Error error)\n    {\n        return Results.Problem(\n            title: GetTitle(error),\n            detail: GetDetail(error),\n            type: GetType(error.Type),\n            statusCode: GetStatusCode(error.Type),\n            extensions: GetErrors(error));\n\n        static string GetTitle(Error error)\n        {\n            return error.Type switch\n            {\n                ErrorType.Validation => error.Code,\n                ErrorType.Problem => error.Code,\n                ErrorType.NotFound => error.Code,\n                ErrorType.Conflict => error.Code,\n                _ => \"Internal server error\",\n            };\n        }\n\n        static string GetDetail(Error error)\n        {\n            return error.Type switch\n            {\n                ErrorType.Validation => error.Description,\n                ErrorType.Problem => error.Description,\n                ErrorType.NotFound => error.Description,\n                ErrorType.Conflict => error.Description,\n                _ => \"An unexpected error occurred\",\n            };\n        }\n\n        static string GetType(ErrorType errorType)\n        {\n            return errorType switch\n            {\n                ErrorType.Validation => \"https://tools.ietf.org/html/rfc7231#section-6.5.1\",\n                ErrorType.Problem => \"https://tools.ietf.org/html/rfc7231#section-6.5.1\",\n                ErrorType.NotFound => \"https://tools.ietf.org/html/rfc7231#section-6.5.4\",\n                ErrorType.Conflict => \"https://tools.ietf.org/html/rfc7231#section-6.5.8\",\n                _ => \"https://tools.ietf.org/html/rfc7231#section-6.6.1\"\n            };\n        }\n\n        static int GetStatusCode(ErrorType errorType)\n        {\n            return errorType switch\n            {\n                ErrorType.Validation => StatusCodes.Status400BadRequest,\n                ErrorType.NotFound => StatusCodes.Status404NotFound,\n                ErrorType.Conflict => StatusCodes.Status409Conflict,\n                _ => StatusCodes.Status500InternalServerError,\n            };\n        }\n\n        static Dictionary<string, object?>? GetErrors(Error error)\n        {\n            if (error is not ValidationError validationError)\n            {\n                return null;\n            }\n\n            return new Dictionary<string, object?>\n            {\n                [\"errors\"] = validationError.Errors,\n            };\n        }\n    }\n}\n
+===================================================================
+diff --git a/Web.API/Infrastructure/CustomResults.cs b/Web.API/Infrastructure/CustomResults.cs
+--- a/Web.API/Infrastructure/CustomResults.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Web.API/Infrastructure/CustomResults.cs	(date 1780156305155)
+@@ -1,4 +1,6 @@
++using System.Collections.Generic;
+ using Domain.Common;
++using Microsoft.AspNetCore.Http;
+ 
+ namespace Web.API.Infrastructure;
+ 
+Index: Domain/Formulas/Formula.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Domain.Expressions;\n\nnamespace Domain.Formulas;\n\npublic class Formula\n{\n    public Guid Id { get; init; } = Guid.CreateVersion7();\n    \n    public required string Name { get; set; }\n    public required IOperand Expression { get; init; }\n    \n    public ICollection<FormulaField> FieldsConfiguration { get; init; } = [];\n}\n
+===================================================================
+diff --git a/Domain/Formulas/Formula.cs b/Domain/Formulas/Formula.cs
+--- a/Domain/Formulas/Formula.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Formulas/Formula.cs	(date 1780222032658)
+@@ -1,4 +1,5 @@
+ using Domain.Expressions;
++using Domain.Users;
+ 
+ namespace Domain.Formulas;
+ 
+@@ -6,7 +7,12 @@
+ {
+     public Guid Id { get; init; } = Guid.CreateVersion7();
+     
++    public Guid OwnerId { get; init; }
++    public User? Owner { get; init; }
++    
+     public required string Name { get; set; }
++    public required string NameNormalized { get; set; }
++    
+     public required IOperand Expression { get; init; }
+     
+     public ICollection<FormulaField> FieldsConfiguration { get; init; } = [];
+Index: Domain/Users/RoleName.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>namespace Domain.Users;\n\npublic static class RoleName\n{\n    public const string User = nameof(User);\n    public const string Admin = nameof(Admin);\n}\n
+===================================================================
+diff --git a/Domain/Users/RoleName.cs b/Domain/Users/RoleName.cs
+--- a/Domain/Users/RoleName.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Domain/Users/RoleName.cs	(date 1780217460005)
+@@ -2,6 +2,5 @@
+ 
+ public static class RoleName
+ {
+-    public const string User = nameof(User);
+     public const string Admin = nameof(Admin);
+ }
+Index: Infrastructure.Persistence/Seeders/RoleSeeder.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Domain.Users;\nusing Microsoft.AspNetCore.Identity;\nusing Microsoft.EntityFrameworkCore.Metadata.Builders;\n\nnamespace Infrastructure.Persistence.Seeders;\n\ninternal static class RoleSeeder\n{\n    internal static void Seed(this EntityTypeBuilder<IdentityRole<Guid>> builder)\n    {\n        builder.HasData(\n            Create(\"0131895b-65b6-4b20-88f6-2ba133c3d054\", RoleName.User, \"1549794e-2db9-4e5b-bc8d-798627fc4d37\"),\n            Create(\"7ceb50b3-2d36-4a76-a8c7-ae2d5a924d4c\", RoleName.Admin, \"1549794e-2db9-4e5b-bc8d-798627fc4d37\")\n        );\n    }\n\n    private static IdentityRole<Guid> Create(string id, string name, string concurrencyStamp)\n    {\n        return new IdentityRole<Guid>()\n        {\n            Id = new Guid(id),\n            Name = name,\n            NormalizedName = name.ToUpper(),\n            ConcurrencyStamp = new Guid(concurrencyStamp).ToString(),\n        };\n    }\n}\n
+===================================================================
+diff --git a/Infrastructure.Persistence/Seeders/RoleSeeder.cs b/Infrastructure.Persistence/Seeders/RoleSeeder.cs
+--- a/Infrastructure.Persistence/Seeders/RoleSeeder.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Infrastructure.Persistence/Seeders/RoleSeeder.cs	(date 1780217465062)
+@@ -9,7 +9,6 @@
+     internal static void Seed(this EntityTypeBuilder<IdentityRole<Guid>> builder)
+     {
+         builder.HasData(
+-            Create("0131895b-65b6-4b20-88f6-2ba133c3d054", RoleName.User, "1549794e-2db9-4e5b-bc8d-798627fc4d37"),
+             Create("7ceb50b3-2d36-4a76-a8c7-ae2d5a924d4c", RoleName.Admin, "1549794e-2db9-4e5b-bc8d-798627fc4d37")
+         );
+     }
+Index: Infrastructure.Persistence/DependencyInjection.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using System.Text;\nusing Domain.Users;\nusing Infrastructure.AppSettings;\nusing Infrastructure.AppSettings.Models;\nusing Infrastructure.Persistence.Contexts;\nusing Microsoft.AspNetCore.Authentication.Cookies;\nusing Microsoft.AspNetCore.Builder;\nusing Microsoft.AspNetCore.Http;\nusing Microsoft.AspNetCore.Identity;\nusing Microsoft.EntityFrameworkCore;\nusing Microsoft.Extensions.Configuration;\nusing Microsoft.Extensions.DependencyInjection;\nusing Microsoft.Extensions.Options;\n\nnamespace Infrastructure.Persistence;\n\npublic static class DependencyInjection\n{\n    extension(IServiceCollection services)\n    {\n        public IServiceCollection AddPersistence(IConfiguration configuration)\n        {\n            return services\n                .AddSettings<DbSettings>(configuration)\n                .AddDataContext<IDataContext, DataContext>(seed: true)\n                .AddDataContext<IReadOnlyDataContext, ReadOnlyDataContext>(QueryTrackingBehavior.NoTracking);\n        }\n\n        private IServiceCollection AddDataContext<TService, TContext>(QueryTrackingBehavior trackingBehavior = QueryTrackingBehavior.TrackAll, bool seed = false)\n            where TService : class\n            where TContext : DbContext, TService\n        {\n            return services\n                .AddDbContextFactory<TContext>((sp, options) =>\n                {\n                    var connectionString = sp.GetRequiredService<IOptions<DbSettings>>().Value.ConnectionString;\n\n                    options.UseNpgsql(connectionString, b =>\n                        {\n                            b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);\n                            b.EnableRetryOnFailure(5, TimeSpan.FromSeconds(30), null);\n                        })\n                        .UseQueryTrackingBehavior(trackingBehavior)\n                        .UseSnakeCaseNamingConvention();\n                    \n                })\n                .AddScoped<TService, TContext>((sp) => sp.GetRequiredService<IDbContextFactory<TContext>>().CreateDbContext());\n        }\n\n        public IServiceCollection AddIdentity()\n        {\n            services.AddIdentityCore<User>(options =>\n                {\n                    options.Password.RequiredLength = 12;\n\n                    options.Password.RequireLowercase = true;\n                    options.Password.RequireUppercase = true;\n                    options.Password.RequireDigit = true;\n                    options.Password.RequireNonAlphanumeric = true;\n                })\n                .AddRoles<IdentityRole<Guid>>()\n                .AddEntityFrameworkStores<DataContext>()\n                .AddSignInManager()\n                .AddDefaultTokenProviders()\n                .AddApiEndpoints();\n\n            services.AddAuthentication(IdentityConstants.BearerScheme)\n                .AddBearerToken(IdentityConstants.BearerScheme);\n\n            services.AddAuthorization();\n\n            return services;\n        }\n    }\n\n    extension(IApplicationBuilder app)\n    {\n        public async Task ApplyMigrations()\n        {\n            await using var scope = app.ApplicationServices.CreateAsyncScope();\n            await using var dbContext = scope.ServiceProvider.GetRequiredService<DataContext>();\n    \n            if (dbContext.Database.IsRelational())\n            {\n                await dbContext.Database.MigrateAsync();\n            }\n        }\n    }\n}\n
+===================================================================
+diff --git a/Infrastructure.Persistence/DependencyInjection.cs b/Infrastructure.Persistence/DependencyInjection.cs
+--- a/Infrastructure.Persistence/DependencyInjection.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Infrastructure.Persistence/DependencyInjection.cs	(date 1780233804243)
+@@ -1,4 +1,6 @@
+ using System.Text;
++using System.Text.Json;
++using Domain.Expressions;
+ using Domain.Users;
+ using Infrastructure.AppSettings;
+ using Infrastructure.AppSettings.Models;
+@@ -39,6 +41,14 @@
+                         {
+                             b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                             b.EnableRetryOnFailure(5, TimeSpan.FromSeconds(30), null);
++                            b.ConfigureDataSource(x =>
++                            {
++                                x.EnableDynamicJson();
++                                x.ConfigureJsonOptions(new JsonSerializerOptions()
++                                {
++                                    AllowOutOfOrderMetadataProperties = true
++                                });
++                            });
+                         })
+                         .UseQueryTrackingBehavior(trackingBehavior)
+                         .UseSnakeCaseNamingConvention();
+Index: Web.API/Program.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Application.API;\nusing Domain.Users;\nusing Infrastructure.AppSettings;\nusing Infrastructure.AppSettings.Models;\nusing Infrastructure.Persistence;\nusing NLog;\nusing NLog.Web;\nusing Web.API.Endpoints;\nusing Web.API.Infrastructure;\n\nvar builder = WebApplication.CreateBuilder(args);\n\nvar logger = LogManager.Setup()\n    .LoadConfigurationFromAppSettings(nlogConfigSection: nameof(NLogSettings))\n    .GetCurrentClassLogger();\ntry\n{\n    var configuration = builder.Configuration.AddJsonConfigurations();\n\n    builder.UseNLog();\n\n    builder.Services\n        .AddExceptionHandler<GlobalExceptionHandler>()\n        .AddProblemDetails()\n        .AddSwagger()\n        .AddEndpoints()\n        .ConfigureSerializerOptions()\n        .AddPersistence(configuration)\n        .AddIdentity()\n        .AddRequestHandlers()\n        .AddMemoryCache(x =>\n        {\n            x.SizeLimit = 1000;\n        });\n\n\n    var app = builder.Build();\n    app.UseAuthentication();\n    app.UseAuthorization();\n    \n\n    app.MapGet(\"/api/ping\", () => \"pong\");\n    \n    app.MapGroup(\"/api/users\").MapIdentityApi<User>().WithTags(Tags.Account);\n    app.MapEndpoints(app.MapGroup(\"api\"));\n\n    if (app.Environment.IsDevelopment())\n    {\n        await app.ApplyMigrations();\n        app.MapOpenApi();\n        app.UseSwagger();\n    }\n\n    app.UseHttpsRedirection();\n\n\n    await app.RunAsync();\n}\ncatch (Exception ex)\n{\n    logger.Error(ex, \"Exception occured during startup {Message}.\", ex.Message);\n}\nfinally\n{\n    LogManager.Shutdown();\n}\n
+===================================================================
+diff --git a/Web.API/Program.cs b/Web.API/Program.cs
+--- a/Web.API/Program.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Web.API/Program.cs	(date 1780456314473)
+@@ -38,11 +38,15 @@
+     app.UseAuthentication();
+     app.UseAuthorization();
+     
+-
+-    app.MapGet("/api/ping", () => "pong");
++    
++    app.MapGroup("/api/users")
++        .MapIdentityApi<User>()
++        .WithTags(Tags.Account);
+     
+-    app.MapGroup("/api/users").MapIdentityApi<User>().WithTags(Tags.Account);
+     app.MapEndpoints(app.MapGroup("api"));
++    
++    app.MapGet("/api/ping", () => "pong")
++        .WithTags(Tags.Other);
+ 
+     if (app.Environment.IsDevelopment())
+     {
+Index: Web.API/Infrastructure/DependencyInjection.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using System.Text.Json;\nusing System.Text.Json.Serialization;\nusing Microsoft.Extensions.DependencyInjection.Extensions;\nusing Web.API.Endpoints;\n\nnamespace Web.API.Infrastructure;\n\ninternal static class DependencyInjection\n{\n    extension(IServiceCollection services)\n    {\n        internal IServiceCollection AddEndpoints()\n        {\n            var serviceDescriptors = typeof(IEndpoint).Assembly.GetTypes()\n                .Where(type => type is { IsAbstract: false, IsInterface: false } &&\n                               type.IsAssignableTo(typeof(IEndpoint)))\n                .Select(type => ServiceDescriptor.Transient(typeof(IEndpoint), type))\n                .ToArray();\n\n            services.TryAddEnumerable(serviceDescriptors);\n\n            return services;\n        }\n\n        internal IServiceCollection AddSwagger()\n        {\n            services.AddEndpointsApiExplorer();\n            return services.AddOpenApiDocument(settings =>\n            {\n                settings.Title = \"Dungeon editor API\";\n                settings.Version = \"v1\";\n            });\n        }\n\n        internal IServiceCollection ConfigureSerializerOptions()\n        {\n            return services.ConfigureHttpJsonOptions(x =>\n            {\n                x.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;\n                x.SerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;\n                x.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;\n            });\n        }\n    }\n\n    internal static IApplicationBuilder MapEndpoints(\n        this WebApplication app,\n        RouteGroupBuilder? routeGroupBuilder = null)\n    {\n        var endpoints = app.Services.GetRequiredService<IEnumerable<IEndpoint>>();\n\n        IEndpointRouteBuilder builder = routeGroupBuilder is null ? app : routeGroupBuilder;\n\n        foreach (var endpoint in endpoints)\n        {\n            endpoint.MapEndpoint(builder);\n        }\n\n        return app;\n    }\n\n    internal static IApplicationBuilder UseSwagger(this IApplicationBuilder app)\n    {\n        app.UseOpenApi(c => { c.Path = \"/api/swagger/{documentName}/swagger.json\"; });\n        app.UseSwaggerUi(c =>\n        {\n            c.DocumentPath = \"/api/swagger/{documentName}/swagger.json\";\n            c.Path = \"/api/swagger\";\n        });\n        \n        return app;\n    }\n}\n
+===================================================================
+diff --git a/Web.API/Infrastructure/DependencyInjection.cs b/Web.API/Infrastructure/DependencyInjection.cs
+--- a/Web.API/Infrastructure/DependencyInjection.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Web.API/Infrastructure/DependencyInjection.cs	(date 1780506537244)
+@@ -1,7 +1,12 @@
+ using System.Text.Json;
+ using System.Text.Json.Serialization;
++using Microsoft.AspNetCore.Identity;
+ using Microsoft.Extensions.DependencyInjection.Extensions;
++using Microsoft.OpenApi;
++using NSwag;
++using NSwag.Generation.Processors.Security;
+ using Web.API.Endpoints;
++using OpenApiSecurityScheme = NSwag.OpenApiSecurityScheme;
+ 
+ namespace Web.API.Infrastructure;
+ 
+@@ -27,8 +32,18 @@
+             services.AddEndpointsApiExplorer();
+             return services.AddOpenApiDocument(settings =>
+             {
+-                settings.Title = "Dungeon editor API";
++                settings.Title = "Formula Engine";
+                 settings.Version = "v1";
++                
++                settings.AddSecurity(IdentityConstants.BearerScheme, new OpenApiSecurityScheme
++                {
++                    Type = OpenApiSecuritySchemeType.ApiKey,
++                    Name = "Authorization",
++                    In = OpenApiSecurityApiKeyLocation.Header,
++                    Description = "Access token"
++                });
++                
++                settings.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor(IdentityConstants.BearerScheme));
+             });
+         }
+ 
+@@ -37,7 +52,6 @@
+             return services.ConfigureHttpJsonOptions(x =>
+             {
+                 x.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+-                x.SerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+                 x.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+             });
+         }
+Index: Web.API/Endpoints/Tags.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>namespace Web.API.Endpoints;\n\ninternal static class Tags\n{\n    public const string Account = nameof(Account);\n    public const string Other = nameof(Other);\n}\n
+===================================================================
+diff --git a/Web.API/Endpoints/Tags.cs b/Web.API/Endpoints/Tags.cs
+--- a/Web.API/Endpoints/Tags.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Web.API/Endpoints/Tags.cs	(date 1780150568310)
+@@ -3,5 +3,6 @@
+ internal static class Tags
+ {
+     public const string Account = nameof(Account);
++    public const string Formula = nameof(Formula);
+     public const string Other = nameof(Other);
+ }
+Index: Web.API/Web.API.csproj
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><Project Sdk=\"Microsoft.NET.Sdk.Web\">\n\n    <PropertyGroup>\n        <TargetFramework>net10.0</TargetFramework>\n        <Nullable>enable</Nullable>\n        <ImplicitUsings>enable</ImplicitUsings>\n        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>\n    </PropertyGroup>\n\n    <ItemGroup>\n        <PackageReference Include=\"Microsoft.AspNetCore.OpenApi\" Version=\"10.0.4\" />\n        <PackageReference Include=\"NSwag.AspNetCore\" Version=\"14.7.1\" />\n        <PackageReference Include=\"Microsoft.EntityFrameworkCore.Tools\" Version=\"10.0.3\">\n            <PrivateAssets>all</PrivateAssets>\n            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>\n        </PackageReference>\n    </ItemGroup>\n\n    <ItemGroup>\n      <Content Include=\"..\\.dockerignore\">\n        <Link>.dockerignore</Link>\n      </Content>\n    </ItemGroup>\n\n    <ItemGroup>\n      <ProjectReference Include=\"..\\Application.API\\Application.API.csproj\" />\n    </ItemGroup>\n\n</Project>\n
+===================================================================
+diff --git a/Web.API/Web.API.csproj b/Web.API/Web.API.csproj
+--- a/Web.API/Web.API.csproj	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Web.API/Web.API.csproj	(date 1780508064397)
+@@ -2,8 +2,8 @@
+ 
+     <PropertyGroup>
+         <TargetFramework>net10.0</TargetFramework>
+-        <Nullable>enable</Nullable>
+         <ImplicitUsings>enable</ImplicitUsings>
++        <Nullable>enable</Nullable>
+         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+     </PropertyGroup>
+ 
+Index: Infrastructure.Persistence/Configurations/FormulaEntityConfiguration.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Domain.Formulas;\nusing Microsoft.EntityFrameworkCore;\nusing Microsoft.EntityFrameworkCore.Metadata.Builders;\n\nnamespace Infrastructure.Persistence.Configurations;\n\npublic class FormulaEntityConfiguration : IEntityTypeConfiguration<Formula>\n{\n    public void Configure(EntityTypeBuilder<Formula> builder)\n    {\n        builder.HasKey(x => x.Id);\n        builder.Property(x => x.Name).HasMaxLength(255);\n        builder.HasIndex(x => x.Name).IsUnique();\n\n        builder.Property(x => x.Expression).HasColumnType(\"jsonb\");\n        builder.Property(x => x.FieldsConfiguration).HasColumnType(\"jsonb\");\n    }\n}\n
+===================================================================
+diff --git a/Infrastructure.Persistence/Configurations/FormulaEntityConfiguration.cs b/Infrastructure.Persistence/Configurations/FormulaEntityConfiguration.cs
+--- a/Infrastructure.Persistence/Configurations/FormulaEntityConfiguration.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Infrastructure.Persistence/Configurations/FormulaEntityConfiguration.cs	(date 1780233758603)
+@@ -1,3 +1,5 @@
++using System.Text.Json;
++using Domain.Expressions;
+ using Domain.Formulas;
+ using Microsoft.EntityFrameworkCore;
+ using Microsoft.EntityFrameworkCore.Metadata.Builders;
+@@ -9,10 +11,16 @@
+     public void Configure(EntityTypeBuilder<Formula> builder)
+     {
+         builder.HasKey(x => x.Id);
+-        builder.Property(x => x.Name).HasMaxLength(255);
+-        builder.HasIndex(x => x.Name).IsUnique();
++        builder.Property(x => x.NameNormalized).HasMaxLength(255).IsRequired();
++        builder.HasIndex(x => x.NameNormalized);
++        
++        builder.Property(x => x.OwnerId).IsRequired();
++        builder.HasOne(x => x.Owner).WithMany();
+ 
+-        builder.Property(x => x.Expression).HasColumnType("jsonb");
+-        builder.Property(x => x.FieldsConfiguration).HasColumnType("jsonb");
++        builder.Property(x => x.Expression)
++            .HasColumnType("jsonb");
++        
++        builder.Property(x => x.FieldsConfiguration)
++            .HasColumnType("jsonb");
+     }
+ }
+Index: Infrastructure.Persistence/Contexts/ReadOnlyDataContext.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Microsoft.EntityFrameworkCore;\n\nnamespace Infrastructure.Persistence.Contexts;\n\npublic sealed class ReadOnlyDataContext : DataContext\n{\n    public ReadOnlyDataContext(DbContextOptions<DataContext> dbContext) : base(dbContext)\n    {\n    }\n\n    public ReadOnlyDataContext(DbContextOptions options) : base(options)\n    {\n    }\n\n    public override int SaveChanges() =>\n        throw new InvalidOperationException(\"unable to save changes: Read-only context\");\n\n    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new()) =>\n        throw new InvalidOperationException(\"unable to save changes: Read-only context\");\n\n    public override int SaveChanges(bool acceptAllChangesOnSuccess) =>\n        throw new InvalidOperationException(\"unable to save changes: Read-only context\");\n}\n
+===================================================================
+diff --git a/Infrastructure.Persistence/Contexts/ReadOnlyDataContext.cs b/Infrastructure.Persistence/Contexts/ReadOnlyDataContext.cs
+--- a/Infrastructure.Persistence/Contexts/ReadOnlyDataContext.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Infrastructure.Persistence/Contexts/ReadOnlyDataContext.cs	(date 1780223859970)
+@@ -2,22 +2,17 @@
+ 
+ namespace Infrastructure.Persistence.Contexts;
+ 
+-public sealed class ReadOnlyDataContext : DataContext
++internal class ReadOnlyDataContext : DataContext
+ {
+     public ReadOnlyDataContext(DbContextOptions<DataContext> dbContext) : base(dbContext)
+     {
+     }
+ 
+-    public ReadOnlyDataContext(DbContextOptions options) : base(options)
++    protected ReadOnlyDataContext(DbContextOptions options) : base(options)
+     {
+     }
+ 
+-    public override int SaveChanges() =>
+-        throw new InvalidOperationException("unable to save changes: Read-only context");
++    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => throw new InvalidOperationException("Unable to save changes in read-only context.");
+ 
+-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = new()) =>
+-        throw new InvalidOperationException("unable to save changes: Read-only context");
+-
+-    public override int SaveChanges(bool acceptAllChangesOnSuccess) =>
+-        throw new InvalidOperationException("unable to save changes: Read-only context");
++    public override int SaveChanges() => throw new InvalidOperationException("Unable to save changes in read-only context.");
+ }
+Index: Infrastructure.Persistence/Contexts/IDataContext.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Domain.Formulas;\nusing Microsoft.EntityFrameworkCore;\nusing Microsoft.EntityFrameworkCore.Infrastructure;\n\nnamespace Infrastructure.Persistence.Contexts;\n\npublic interface IReadOnlyDataContext\n{\n    DatabaseFacade Database { get; }\n    DbSet<Formula> Formulas { get; }\n}\n\npublic interface IDataContext : IReadOnlyDataContext\n{\n    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);\n}\n
+===================================================================
+diff --git a/Infrastructure.Persistence/Contexts/IDataContext.cs b/Infrastructure.Persistence/Contexts/IDataContext.cs
+--- a/Infrastructure.Persistence/Contexts/IDataContext.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Infrastructure.Persistence/Contexts/IDataContext.cs	(date 1780507542286)
+@@ -8,6 +8,7 @@
+ {
+     DatabaseFacade Database { get; }
+     DbSet<Formula> Formulas { get; }
++    DbSet<EvaluationSubmission> Submissions { get; }
+ }
+ 
+ public interface IDataContext : IReadOnlyDataContext
+Index: Infrastructure.Persistence/Contexts/DataContext.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using Domain.Formulas;\nusing Domain.Users;\nusing Microsoft.AspNetCore.Identity;\nusing Microsoft.AspNetCore.Identity.EntityFrameworkCore;\nusing Microsoft.EntityFrameworkCore;\n\nnamespace Infrastructure.Persistence.Contexts;\n\npublic class DataContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IDataContext\n{\n    public DataContext(DbContextOptions<DataContext> dbContext)\n        : base(dbContext)\n    {\n    }\n\n    protected DataContext(DbContextOptions options)\n        : base(options)\n    {\n    }\n\n    public DbSet<Formula> Formulas { get; init; }\n    \n    \n    protected override void OnModelCreating(ModelBuilder builder)\n    {\n        builder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);\n    }\n}\n
+===================================================================
+diff --git a/Infrastructure.Persistence/Contexts/DataContext.cs b/Infrastructure.Persistence/Contexts/DataContext.cs
+--- a/Infrastructure.Persistence/Contexts/DataContext.cs	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ b/Infrastructure.Persistence/Contexts/DataContext.cs	(date 1780507555909)
+@@ -6,7 +6,7 @@
+ 
+ namespace Infrastructure.Persistence.Contexts;
+ 
+-public class DataContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IDataContext
++internal class DataContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IDataContext
+ {
+     public DataContext(DbContextOptions<DataContext> dbContext)
+         : base(dbContext)
+@@ -19,8 +19,9 @@
+     }
+ 
+     public DbSet<Formula> Formulas { get; init; }
+-    
+-    
++    public DbSet<EvaluationSubmission> Submissions { get; init; }
++
++
+     protected override void OnModelCreating(ModelBuilder builder)
+     {
+         builder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);

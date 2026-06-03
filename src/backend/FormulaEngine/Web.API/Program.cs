@@ -38,11 +38,15 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
     
-
-    app.MapGet("/api/ping", () => "pong");
     
-    app.MapGroup("/api/users").MapIdentityApi<User>().WithTags(Tags.Account);
+    app.MapGroup("/api/users")
+        .MapIdentityApi<User>()
+        .WithTags(Tags.Account);
+    
     app.MapEndpoints(app.MapGroup("api"));
+    
+    app.MapGet("/api/ping", () => "pong")
+        .WithTags(Tags.Other);
 
     if (app.Environment.IsDevelopment())
     {

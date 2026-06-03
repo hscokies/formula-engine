@@ -5,23 +5,13 @@ namespace Domain.Expressions;
 [JsonPolymorphic]
 [JsonDerivedType(typeof(FieldOperand), "field")]
 [JsonDerivedType(typeof(DecimalValueOperand), "decimalValue")]
-[JsonDerivedType(typeof(DecimalValueOperand), "integerValue")]
+[JsonDerivedType(typeof(IntegerValueOperand), "integerValue")]
 [JsonDerivedType(typeof(BinaryOperation), "binaryOperation")]
-[JsonDerivedType(typeof(UnaryOperator), "unaryOperator")]
+[JsonDerivedType(typeof(UnaryOperation), "unaryOperator")]
 
-public interface IOperand;
+public abstract class IOperand;
 
 public class FieldOperand : IOperand
 {
     public required string InternalName { get; set; }
 }
-
-public sealed class DecimalValueOperand : IOperand
-{
-    public required decimal Value { get; set; }
-}
-
-public sealed class IntegerValueOperand : IOperand
-{
-    public required int Value { get; set; }
-} 

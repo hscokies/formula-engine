@@ -10,7 +10,6 @@
       <ProjectReference Include="..\Infrastructure.AppSettings\Infrastructure.AppSettings.csproj" />
       <ProjectReference Include="..\Infrastructure.Logging\Infrastructure.Logging.csproj" />
       <ProjectReference Include="..\Infrastructure.Persistence\Infrastructure.Persistence.csproj" />
-      <ProjectReference Include="..\Infrastructure.Services\Infrastructure.Services.csproj" />
     </ItemGroup>
 
 </Project>

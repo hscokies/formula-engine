@@ -153,7 +153,7 @@ public sealed class AstBuilder(List<Token> tokens)
     {
         if (Match(TokenType.Minus))
         {
-            return new UnaryExpression
+            return new UnaryOperation
             {
                 Operator = UnaryOperator.Negate,
                 Operand = ParseUnary()
@@ -181,7 +181,7 @@ public sealed class AstBuilder(List<Token> tokens)
 
         Consume(TokenType.RightParenthesis);
 
-        return new UnaryExpression
+        return new UnaryOperation
         {
             Operand = operand,
             Operator = identifier.ToLower() switch

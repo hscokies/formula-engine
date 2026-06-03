@@ -18,9 +18,9 @@ public static class AstEvaluator
             IntegerValueOperand integer => integer.Value,
             DecimalValueOperand @decimal => @decimal.Value,
             FieldOperand field => ResolveField(field, scope),
-            UnaryExpression unary => EvaluateUnary(unary, scope),
+            UnaryOperation unary => EvaluateUnary(unary, scope),
             BinaryOperation binary => EvaluateBinary(binary, scope),
-            _ => throw new NotSupportedException($"Unsupported operand: {operand.GetType().Name}")
+            _ => throw new UnsupportedOperandException(operand.GetType())
         };
     }
 
@@ -68,20 +68,19 @@ public static class AstEvaluator
                     (double)left,
                     (double)right),
 
-            _ => throw new NotSupportedException(
-                $"Unsupported operator: {operation.Operator}")
+            _ => throw new UnsupportedOperatorException($"Unsupported binary operator: {operation.Operator}")
         };
     }
 
     private static decimal EvaluateUnary(
-        UnaryExpression unary,
+        UnaryOperation operation,
         IReadOnlyDictionary<string, object> scope)
     {
         var value = EvaluateInternal(
-            unary.Operand,
+            operation.Operand,
             scope);
 
-        return unary.Operator switch
+        return operation.Operator switch
         {
             UnaryOperator.Abs => Math.Abs(value),
             UnaryOperator.Sqrt => (decimal)Math.Sqrt((double)value),
@@ -89,9 +88,7 @@ public static class AstEvaluator
             UnaryOperator.Floor => Math.Floor(value),
             UnaryOperator.Round => Math.Round(value),
             UnaryOperator.Negate => -value,
-
-            _ => throw new NotSupportedException(
-                $"Unsupported unary operator: {unary.Operator}")
+            _ => throw new UnsupportedOperatorException($"Unsupported unary operator: {operation.Operator}")
         };
     }
 }

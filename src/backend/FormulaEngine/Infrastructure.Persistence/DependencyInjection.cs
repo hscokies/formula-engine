@@ -1,4 +1,6 @@
 ﻿using System.Text;
+using System.Text.Json;
+using Domain.Expressions;
 using Domain.Users;
 using Infrastructure.AppSettings;
 using Infrastructure.AppSettings.Models;
@@ -39,6 +41,14 @@ public static class DependencyInjection
                         {
                             b.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                             b.EnableRetryOnFailure(5, TimeSpan.FromSeconds(30), null);
+                            b.ConfigureDataSource(x =>
+                            {
+                                x.EnableDynamicJson();
+                                x.ConfigureJsonOptions(new JsonSerializerOptions()
+                                {
+                                    AllowOutOfOrderMetadataProperties = true
+                                });
+                            });
                         })
                         .UseQueryTrackingBehavior(trackingBehavior)
                         .UseSnakeCaseNamingConvention();

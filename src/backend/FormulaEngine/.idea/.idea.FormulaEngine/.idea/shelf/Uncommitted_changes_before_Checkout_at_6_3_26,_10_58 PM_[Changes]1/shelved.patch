@@ -1,0 +1,1038 @@
+Index: Infrastructure.Services/Infrastructure.Services.csproj
+===================================================================
+diff --git a/Infrastructure.Services/Infrastructure.Services.csproj b/Infrastructure.Services/Infrastructure.Services.csproj
+deleted file mode 100644
+--- a/Infrastructure.Services/Infrastructure.Services.csproj	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
++++ /dev/null	(revision 1402ac955d6d7f12026b5337329555a781f8bd08)
+@@ -1,13 +0,0 @@
+-<Project Sdk="Microsoft.NET.Sdk">
+-
+-    <PropertyGroup>
+-        <TargetFramework>net10.0</TargetFramework>
+-        <ImplicitUsings>enable</ImplicitUsings>
+-        <Nullable>enable</Nullable>
+-    </PropertyGroup>
+-
+-    <ItemGroup>
+-      <ProjectReference Include="..\Domain\Domain.csproj" />
+-    </ItemGroup>
+-
+-</Project>
+Index: Web.API/Endpoints/Formulas/Create.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Endpoints/Formulas/Create.cs b/Web.API/Endpoints/Formulas/Create.cs
+new file mode 100644
+--- /dev/null	(date 1780231112106)
++++ b/Web.API/Endpoints/Formulas/Create.cs	(date 1780231112106)
+@@ -0,0 +1,29 @@
++using Application.API.Formulas.Create;
++using Domain.Users;
++using Microsoft.AspNetCore.Mvc;
++using Web.API.Infrastructure;
++using Web.API.Requests.Formulas;
++
++namespace Web.API.Endpoints.Formulas;
++
++internal sealed class Create : IEndpoint
++{
++    public void MapEndpoint(IEndpointRouteBuilder app)
++    {
++        app.MapPost(CreateFormulaCommand.Path, async (
++                HttpContext context,
++                CreateRequest request,
++                CreateFormulaHandler handler,
++                CancellationToken cancellationToken) =>
++            {
++                var command = new CreateFormulaCommand(context.GetUserId(), request.Name, request.Expression);
++                var result = await handler.Handle(command, cancellationToken);
++                return result.Match(
++                    (res) => Results.Created($"/api/formulas/{res.Id}", res),
++                    CustomResults.Problem);
++            })
++            .RequireAuthorization(p => p.RequireRole(RoleName.Admin))
++            .WithTags(Tags.Formula)
++            .Produces<CreatedResult>();
++    }
++}
+Index: Application.API/Formulas/Configure/ConfigureFormulaHandler.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Configure/ConfigureFormulaHandler.cs b/Application.API/Formulas/Configure/ConfigureFormulaHandler.cs
+new file mode 100644
+--- /dev/null	(date 1780234255650)
++++ b/Application.API/Formulas/Configure/ConfigureFormulaHandler.cs	(date 1780234255650)
+@@ -0,0 +1,36 @@
++using System.Text.Json;
++using Application.API.Common;
++using Domain.Common;
++using Domain.Expressions;
++using Infrastructure.Persistence.Contexts;
++
++namespace Application.API.Formulas.Configure;
++
++public sealed class ConfigureFormulaHandler(IDataContext dataContext) : ICommandHandler<ConfigureFormulaCommand>
++{
++    public async Task<Result> Handle(ConfigureFormulaCommand command, CancellationToken cancellationToken)
++    {
++        var formula = await dataContext.Formulas.FindAsync([command.Id], cancellationToken);
++        if (formula is null)
++        {
++            return FormulaErrors.NotFound;
++        }
++
++        
++        foreach (var (internalName, configuration) in command.Fields)
++        {
++            var field = formula.FieldsConfiguration.FirstOrDefault(x => x.InternalName == internalName);
++            if (field is null)
++            {
++                return FormulaErrors.FieldNotFound;
++            }
++            
++            field.Label = configuration.Label;
++            field.Type = configuration.Type;
++        }
++
++        dataContext.Formulas.Update(formula);
++        await dataContext.SaveChangesAsync(cancellationToken);
++        return Result.Success();
++    }
++}
+Index: Web.API/Endpoints/Formulas/Configure.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Endpoints/Formulas/Configure.cs b/Web.API/Endpoints/Formulas/Configure.cs
+new file mode 100644
+--- /dev/null	(date 1780221273345)
++++ b/Web.API/Endpoints/Formulas/Configure.cs	(date 1780221273345)
+@@ -0,0 +1,29 @@
++using Application.API.Formulas.Configure;
++using Domain.Users;
++using Microsoft.AspNetCore.Mvc;
++using Web.API.Infrastructure;
++using Web.API.Requests.Formulas;
++
++namespace Web.API.Endpoints.Formulas;
++
++internal sealed class Configure : IEndpoint
++{
++    public void MapEndpoint(IEndpointRouteBuilder app)
++    {
++        app.MapPost(ConfigureFormulaCommand.Path, async (
++                Guid id,
++                ConfigureRequest request,
++                ConfigureFormulaHandler handler,
++                CancellationToken cancellationToken) =>
++            {
++                var command = new ConfigureFormulaCommand(id, request.Name, request.Fields);
++                var result = await handler.Handle(command, cancellationToken);
++
++                return result.Match(() => Results.Ok(), CustomResults.Problem);
++            })
++            .RequireAuthorization(p => p.RequireRole(RoleName.Admin))
++            .WithTags(Tags.Formula)
++            .ProducesValidationProblem()
++            .Produces<OkObjectResult>();
++    }
++}
+Index: Application.API/Formulas/Evaluate/EvaluateFormulaCommand.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Evaluate/EvaluateFormulaCommand.cs b/Application.API/Formulas/Evaluate/EvaluateFormulaCommand.cs
+new file mode 100644
+--- /dev/null	(date 1780460541819)
++++ b/Application.API/Formulas/Evaluate/EvaluateFormulaCommand.cs	(date 1780460541819)
+@@ -0,0 +1,10 @@
++using Application.API.Common;
++using Domain.Expressions;
++
++namespace Application.API.Formulas.Evaluate;
++
++public sealed record EvaluateFormulaCommand(Guid Id, Dictionary<string, IValue> Arguments)
++    : ICommand<EvaluateFormulaResult>
++{
++    public const string Path = "/formulas/{id:guid}/evaluate";
++}
+Index: Web.API/Requests/Formulas/CreateRequest.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Requests/Formulas/CreateRequest.cs b/Web.API/Requests/Formulas/CreateRequest.cs
+new file mode 100644
+--- /dev/null	(date 1780230977806)
++++ b/Web.API/Requests/Formulas/CreateRequest.cs	(date 1780230977806)
+@@ -0,0 +1,3 @@
++namespace Web.API.Requests.Formulas;
++
++internal sealed record CreateRequest(string Name, string Expression);
+Index: Web.API/Endpoints/Formulas/Get.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Endpoints/Formulas/Get.cs b/Web.API/Endpoints/Formulas/Get.cs
+new file mode 100644
+--- /dev/null	(date 1780223401047)
++++ b/Web.API/Endpoints/Formulas/Get.cs	(date 1780223401047)
+@@ -0,0 +1,26 @@
++using Application.API.Formulas.Get;
++using Microsoft.AspNetCore.Mvc;
++using Web.API.Infrastructure;
++
++namespace Web.API.Endpoints.Formulas;
++
++internal sealed class Get : IEndpoint
++{
++    public void MapEndpoint(IEndpointRouteBuilder app)
++    {
++        app.MapGet(GetFormulaQuery.Path, async (
++                Guid id,
++                GetFormulaHandler handler,
++                CancellationToken cancellationToken) =>
++            {
++                var query = new GetFormulaQuery(id);
++                var result = await handler.Handle(query, cancellationToken);
++
++                return result.Match(Results.Ok, CustomResults.Problem);
++            })
++            .RequireAuthorization()
++            .WithTags(Tags.Formula)
++            .Produces<NotFoundObjectResult>()
++            .Produces<OkObjectResult>();
++    }
++}
+Index: Application.API/Formulas/Configure/ConfigureFormulaCommand.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Configure/ConfigureFormulaCommand.cs b/Application.API/Formulas/Configure/ConfigureFormulaCommand.cs
+new file mode 100644
+--- /dev/null	(date 1780222943307)
++++ b/Application.API/Formulas/Configure/ConfigureFormulaCommand.cs	(date 1780222943307)
+@@ -0,0 +1,11 @@
++using Application.API.Common;
++using Domain.Formulas;
++
++namespace Application.API.Formulas.Configure;
++
++public sealed record ConfigureFormulaCommand(Guid Id, string Name, Dictionary<string, FieldConfiguration> Fields) : ICommand
++{
++    public const string Path = "/formulas/{id:guid}/configure";
++}
++
++public sealed record FieldConfiguration(string Label, FieldType Type);
+Index: Domain/Common/CacheKey.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Domain/Common/CacheKey.cs b/Domain/Common/CacheKey.cs
+new file mode 100644
+--- /dev/null	(date 1780290596596)
++++ b/Domain/Common/CacheKey.cs	(date 1780290596596)
+@@ -0,0 +1,6 @@
++namespace Domain.Common;
++
++public static class CacheKey
++{
++    public const string ExpressionEvaluationResult = nameof(ExpressionEvaluationResult);
++}
+Index: Application.API/Formulas/Evaluate/EvaluateFormulaResult.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Evaluate/EvaluateFormulaResult.cs b/Application.API/Formulas/Evaluate/EvaluateFormulaResult.cs
+new file mode 100644
+--- /dev/null	(date 1780290685863)
++++ b/Application.API/Formulas/Evaluate/EvaluateFormulaResult.cs	(date 1780290685863)
+@@ -0,0 +1,5 @@
++using Application.API.Common;
++
++namespace Application.API.Formulas.Evaluate;
++
++public sealed record EvaluateFormulaResult(Guid Key, decimal Result);
+Index: Application.API/Formulas/Evaluate/EvaluateFormulaHandler.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Evaluate/EvaluateFormulaHandler.cs b/Application.API/Formulas/Evaluate/EvaluateFormulaHandler.cs
+new file mode 100644
+--- /dev/null	(date 1780509234517)
++++ b/Application.API/Formulas/Evaluate/EvaluateFormulaHandler.cs	(date 1780509234517)
+@@ -0,0 +1,66 @@
++using Application.API.Common;
++using Domain.Common;
++using Domain.Expressions;
++using Infrastructure.Persistence.Contexts;
++using Microsoft.Extensions.Caching.Memory;
++using NLog;
++
++namespace Application.API.Formulas.Evaluate;
++
++public sealed class EvaluateFormulaHandler(IReadOnlyDataContext dataContext, IMemoryCache memoryCache)
++    : ICommandHandler<EvaluateFormulaCommand, EvaluateFormulaResult>
++{
++    private readonly Logger _logger = LogManager.GetCurrentClassLogger();
++
++    public async Task<Result<EvaluateFormulaResult>> Handle(EvaluateFormulaCommand command,
++        CancellationToken cancellationToken)
++    {
++        var formula = await dataContext.Formulas.FindAsync([command.Id], cancellationToken);
++        if (formula is null)
++        {
++            return FormulaErrors.NotFound;
++        }
++
++        var scopeCreationResult = EvaluationScopeFactory.Create(formula, command.Arguments);
++        if (!scopeCreationResult.IsSuccess)
++        {
++            return scopeCreationResult.Error;
++        }
++
++        var scope = scopeCreationResult.Value!;
++        decimal evaluationResult;
++
++        try
++        {
++            evaluationResult = AstEvaluator.Evaluate(formula.Expression, scope);
++        }
++        catch (UnknownFieldException)
++        {
++            return FormulaErrors.FieldNotFound;
++        }
++        catch (UnsupportedValueTypeException)
++        {
++            return FormulaErrors.UnsupportedValueType;
++        }
++        catch (UnsupportedOperandException ex)
++        {
++            _logger.Error(ex, "Encountered unsupported operand in {FormulaId} formula", command.Id);
++            return FormulaErrors.Malformed;
++        }
++        catch (UnsupportedOperatorException ex)
++        {
++            _logger.Error(ex, "Encountered unsupported operator in {FormulaId} formula", command.Id);
++            return FormulaErrors.Malformed;
++        }
++
++        var evaluationId = Guid.NewGuid();
++        memoryCache.Set($"{CacheKey.ExpressionEvaluationResult}_{formula.Id}_{evaluationId}", evaluationResult,
++            new MemoryCacheEntryOptions()
++            {
++                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15),
++                Size = 1
++            });
++
++        return new EvaluateFormulaResult(evaluationId, evaluationResult);
++    }
++}
+Index: Domain/Expressions/ValueOperands.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Domain/Expressions/ValueOperands.cs b/Domain/Expressions/ValueOperands.cs
+new file mode 100644
+--- /dev/null	(date 1780506373968)
++++ b/Domain/Expressions/ValueOperands.cs	(date 1780506373968)
+@@ -0,0 +1,44 @@
++using System.Text.Json.Serialization;
++using Domain.Formulas;
++
++namespace Domain.Expressions;
++
++[JsonPolymorphic]
++[JsonDerivedType(typeof(DecimalValueOperand), nameof(FieldType.Decimal))]
++[JsonDerivedType(typeof(IntegerValueOperand), nameof(FieldType.Integer))]
++public interface IValue
++{
++    public bool TryGet<T>(out T? value);
++}
++
++public sealed class DecimalValueOperand : IOperand, IValue
++{
++    public required decimal Value { get; set; }
++    public bool TryGet<T>(out T? value)
++    {
++        value = default;
++        if (Value is not T decimalValue)
++        {
++            return false;
++        }
++
++        value = decimalValue;
++        return true;
++    }
++}
++
++public sealed class IntegerValueOperand : IOperand, IValue
++{
++    public required int Value { get; set; }
++    public bool TryGet<T>(out T? value)
++    {
++        value = default;
++        if (Value is not T integerValue)
++        {
++            return false;
++        }
++
++        value = integerValue;
++        return true;
++    }
++}
+Index: Web.API/Endpoints/Formulas/Evaluate.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Endpoints/Formulas/Evaluate.cs b/Web.API/Endpoints/Formulas/Evaluate.cs
+new file mode 100644
+--- /dev/null	(date 1780508810467)
++++ b/Web.API/Endpoints/Formulas/Evaluate.cs	(date 1780508810467)
+@@ -0,0 +1,27 @@
++using Application.API.Formulas.Evaluate;
++using Domain.Expressions;
++using Microsoft.AspNetCore.Mvc;
++using Web.API.Infrastructure;
++
++namespace Web.API.Endpoints.Formulas;
++
++internal sealed class Evaluate : IEndpoint
++{
++    public void MapEndpoint(IEndpointRouteBuilder app)
++    {
++        app.MapPost(EvaluateFormulaCommand.Path, async (
++                Guid id,
++                Dictionary<string, IValue> arguments,
++                EvaluateFormulaHandler handler,
++                CancellationToken cancellationToken) =>
++            {
++                var command = new EvaluateFormulaCommand(id, arguments);
++                var result = await handler.Handle(command, cancellationToken);
++                return result.Match(Results.Ok, CustomResults.Problem);
++            })
++            .RequireAuthorization()
++            .WithTags(Tags.Formula)
++            .ProducesValidationProblem()
++            .Produces<OkObjectResult>();
++    }
++}
+Index: Application.API/Formulas/FormulaErrors.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/FormulaErrors.cs b/Application.API/Formulas/FormulaErrors.cs
+new file mode 100644
+--- /dev/null	(date 1780460492586)
++++ b/Application.API/Formulas/FormulaErrors.cs	(date 1780460492586)
+@@ -0,0 +1,19 @@
++using Domain.Common;
++
++namespace Application.API.Formulas;
++
++internal static class FormulaErrors
++{
++    public static Error NotFound => Error.Validation("Formulas.NotFound", "Specified formula cannot be found.");
++    public static Error FieldNotFound => Error.Validation("FormulaFields.NotFound", "One or more of the specified fields cannot be found.");
++    
++    public static Error InvalidCharacter => Error.Validation("Formulas.InvalidCharacter", "Provided formula contains one or more invalid characters.");
++    public static Error UnexpectedToken => Error.Validation("Formulas.UnexpectedToken", "Encountered unexpected token while processing provided formula.");
++    public static Error UnexpectedIdentifier => Error.Validation("Formulas.UnexpectedIdentifier", "Encountered unexpected identifier while processing provided formula.");
++    
++    
++    public static Error Malformed => Error.Validation("Formulas.Malformed", "Formula appears to be malformed, please contact formula owner.");
++    public static Error UnsupportedValueType => Error.Validation("Formulas.UnsupportedValueType", "Unable to evaluate expression: One or more of the provided variables are not supported.");
++    public static Error FieldTypeMismatch => Error.Validation("Formulas.FieldTypeMismatch", "Unable to evaluate expression: One or more of the provided variables doesn't match target field type.");
++    public static Error ArgumentsCountMismatch => Error.Validation("Formulas.ArgumentsCountMismatch", "Unable to evaluate expression: Arguments count mismatch.");
++}
+Index: Application.API/Formulas/Create/CreateFormulaResult.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Create/CreateFormulaResult.cs b/Application.API/Formulas/Create/CreateFormulaResult.cs
+new file mode 100644
+--- /dev/null	(date 1780150466250)
++++ b/Application.API/Formulas/Create/CreateFormulaResult.cs	(date 1780150466250)
+@@ -0,0 +1,3 @@
++namespace Application.API.Formulas.Create;
++
++public sealed record CreateFormulaResult(Guid Id, IEnumerable<string> Fields);
+Index: Application.API/Formulas/Create/CreateFormulaHandler.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Create/CreateFormulaHandler.cs b/Application.API/Formulas/Create/CreateFormulaHandler.cs
+new file mode 100644
+--- /dev/null	(date 1780233737813)
++++ b/Application.API/Formulas/Create/CreateFormulaHandler.cs	(date 1780233737813)
+@@ -0,0 +1,75 @@
++using System.Text.Json;
++using Application.API.Common;
++using Domain.Common;
++using Domain.Expressions;
++using Domain.Formulas;
++using Domain.Tokens;
++using Infrastructure.Persistence.Contexts;
++using NLog;
++
++namespace Application.API.Formulas.Create;
++
++public sealed class CreateFormulaHandler(IDataContext dataContext) : ICommandHandler<CreateFormulaCommand, CreateFormulaResult>
++{
++    private readonly Logger  _logger = LogManager.GetCurrentClassLogger();
++    
++    public async Task<Result<CreateFormulaResult>> Handle(CreateFormulaCommand command, CancellationToken cancellationToken)
++    {
++        var tokenizeResult = Tokenize(command.Expression);
++        if (!tokenizeResult.IsSuccess)
++        {
++            return tokenizeResult.Error;
++        }
++
++        IOperand abstractSyntaxTree;
++        var builder = new AstBuilder(tokenizeResult.Value!);
++        
++        try
++        {
++            abstractSyntaxTree = builder.Build();
++        }
++        catch (UnexpectedIdentifierException ex)
++        {
++            _logger.Error(ex, "Unable to process expression: Unexpected identifier '{Identifier}'", ex.Identifier);
++            return FormulaErrors.UnexpectedIdentifier;
++        }
++        catch (UnexpectedTokenException ex)
++        {
++            _logger.Warn(ex, "Expected token to be {Expected} actual {Actual}'", ex.Expected, ex.Actual);
++            return FormulaErrors.UnexpectedToken;
++        }
++        
++        var fields = builder.Fields;
++        
++        var entity = new Formula
++        {
++            Name = command.Name,
++            NameNormalized = command.Name.ToUpperInvariant(),
++            OwnerId = command.UserId,
++            Expression = abstractSyntaxTree,
++            FieldsConfiguration = fields.Select(x => new FormulaField
++            {
++                InternalName = x
++            }).ToArray()
++        };
++
++        dataContext.Formulas.Add(entity);
++        await dataContext.SaveChangesAsync(cancellationToken);
++
++        return new CreateFormulaResult(entity.Id, fields);
++    }
++
++
++    private Result<List<Token>> Tokenize(string expression)
++    {
++        try
++        {
++            return Tokenizer.Tokenize(expression);
++        }
++        catch (UnexpectedCharacterException ex)
++        {
++            _logger.Error(ex, "Unable to parse expression: Invalid character '{Character}'", ex.Character);
++            return FormulaErrors.InvalidCharacter;
++        }
++    }
++}
+Index: Application.API/Formulas/Create/CreateFormulaCommand.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Create/CreateFormulaCommand.cs b/Application.API/Formulas/Create/CreateFormulaCommand.cs
+new file mode 100644
+--- /dev/null	(date 1780222257116)
++++ b/Application.API/Formulas/Create/CreateFormulaCommand.cs	(date 1780222257116)
+@@ -0,0 +1,8 @@
++using Application.API.Common;
++
++namespace Application.API.Formulas.Create;
++
++public sealed record CreateFormulaCommand(Guid UserId, string Name, string Expression) : ICommand<CreateFormulaResult>
++{
++    public const string Path = "/formulas/create";
++}
+Index: Application.API/Formulas/List/ListFormulasHandler.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/List/ListFormulasHandler.cs b/Application.API/Formulas/List/ListFormulasHandler.cs
+new file mode 100644
+--- /dev/null	(date 1780231304530)
++++ b/Application.API/Formulas/List/ListFormulasHandler.cs	(date 1780231304530)
+@@ -0,0 +1,24 @@
++using Application.API.Common;
++using Domain.Common;
++using Infrastructure.Persistence.Contexts;
++using Microsoft.EntityFrameworkCore;
++
++namespace Application.API.Formulas.List;
++
++public sealed class ListFormulasHandler(IReadOnlyDataContext dataContext) : IQueryHandler<ListFormulasQuery, ListFormulasResult>
++{
++    public async Task<Result<ListFormulasResult>> Handle(ListFormulasQuery query, CancellationToken cancellationToken)
++    {
++        
++        var queryable = dataContext.Formulas.Where(x => x.OwnerId == query.UserId);
++
++        var searchNormalized = query.Search?.Trim().ToUpperInvariant();
++        if (!string.IsNullOrWhiteSpace(searchNormalized))
++        {
++            queryable = queryable.Where(x => EF.Functions.Like(x.NameNormalized, $"{searchNormalized}%"));
++        }
++
++        var items = await queryable.Select(x => new Formula(x.Id, x.Name)).ToListAsync(cancellationToken);
++        return new ListFormulasResult(items);
++    }
++}
+Index: Application.API/Formulas/List/ListFormulasResult.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/List/ListFormulasResult.cs b/Application.API/Formulas/List/ListFormulasResult.cs
+new file mode 100644
+--- /dev/null	(date 1780221854784)
++++ b/Application.API/Formulas/List/ListFormulasResult.cs	(date 1780221854784)
+@@ -0,0 +1,5 @@
++namespace Application.API.Formulas.List;
++
++public sealed record ListFormulasResult(IEnumerable<Formula> Items);
++
++public sealed record Formula(Guid Id, string Name);
+Index: Application.API/Formulas/List/ListFormulasQuery.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/List/ListFormulasQuery.cs b/Application.API/Formulas/List/ListFormulasQuery.cs
+new file mode 100644
+--- /dev/null	(date 1780223072085)
++++ b/Application.API/Formulas/List/ListFormulasQuery.cs	(date 1780223072085)
+@@ -0,0 +1,8 @@
++using Application.API.Common;
++
++namespace Application.API.Formulas.List;
++
++public sealed record ListFormulasQuery(Guid UserId, string? Search) : IQuery<ListFormulasResult>
++{
++    public const string Path = "/formulas";
++}
+Index: Application.API/Formulas/Get/GetFormulaQuery.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Get/GetFormulaQuery.cs b/Application.API/Formulas/Get/GetFormulaQuery.cs
+new file mode 100644
+--- /dev/null	(date 1780223287629)
++++ b/Application.API/Formulas/Get/GetFormulaQuery.cs	(date 1780223287629)
+@@ -0,0 +1,8 @@
++using Application.API.Common;
++
++namespace Application.API.Formulas.Get;
++
++public sealed record GetFormulaQuery(Guid Id) : IQuery<GetFormulaResult>
++{
++    public const string Path = "/formulas/{id:guid}";
++}
+Index: Web.API/Endpoints/Formulas/List.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Endpoints/Formulas/List.cs b/Web.API/Endpoints/Formulas/List.cs
+new file mode 100644
+--- /dev/null	(date 1780223500859)
++++ b/Web.API/Endpoints/Formulas/List.cs	(date 1780223500859)
+@@ -0,0 +1,27 @@
++using Application.API.Formulas.List;
++using Domain.Users;
++using Microsoft.AspNetCore.Mvc;
++using Web.API.Infrastructure;
++
++namespace Web.API.Endpoints.Formulas;
++
++internal sealed class List : IEndpoint
++{
++    public void MapEndpoint(IEndpointRouteBuilder app)
++    {
++        app.MapGet(ListFormulasQuery.Path, async (
++            HttpContext context,
++            [FromQuery] string? search,
++            ListFormulasHandler handler,
++            CancellationToken cancellationToken) =>
++        {
++            var query = new ListFormulasQuery(context.GetUserId(), search);
++            var result = await handler.Handle(query, cancellationToken);
++
++            return result.Match(Results.Ok, CustomResults.Problem);
++        })
++        .RequireAuthorization(x => x.RequireRole(RoleName.Admin))
++        .WithTags(Tags.Formula)
++        .Produces<OkObjectResult>();
++    }
++}
+Index: Application.API/Formulas/Get/GetFormulaHandler.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Get/GetFormulaHandler.cs b/Application.API/Formulas/Get/GetFormulaHandler.cs
+new file mode 100644
+--- /dev/null	(date 1780224061121)
++++ b/Application.API/Formulas/Get/GetFormulaHandler.cs	(date 1780224061121)
+@@ -0,0 +1,38 @@
++using Application.API.Common;
++using Application.API.Formulas.Configure;
++using Domain.Common;
++using Infrastructure.Persistence.Contexts;
++using Microsoft.EntityFrameworkCore;
++
++namespace Application.API.Formulas.Get;
++
++public sealed class GetFormulaHandler(IReadOnlyDataContext dataContext)
++    : IQueryHandler<GetFormulaQuery, GetFormulaResult>
++{
++    public async Task<Result<GetFormulaResult>> Handle(GetFormulaQuery query, CancellationToken cancellationToken)
++    {
++        var formula = await dataContext.Formulas
++            .Where(x => x.Id == query.Id)
++            .Select(x => new
++            {
++                x.Id,
++                x.Name,
++                x.FieldsConfiguration
++            })
++            .FirstOrDefaultAsync(cancellationToken);
++
++        if (formula is null)
++        {
++            return FormulaErrors.NotFound;
++        }
++
++        return new GetFormulaResult(
++            formula.Id,
++            formula.Name,
++            formula.FieldsConfiguration.ToDictionary(
++                f => f.InternalName,
++                f => new FieldConfiguration(f.Label ?? f.InternalName, f.Type)
++            )
++        );
++    }
++}
+Index: Application.API/Formulas/Get/GetFormulaResult.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Get/GetFormulaResult.cs b/Application.API/Formulas/Get/GetFormulaResult.cs
+new file mode 100644
+--- /dev/null	(date 1780222702530)
++++ b/Application.API/Formulas/Get/GetFormulaResult.cs	(date 1780222702530)
+@@ -0,0 +1,5 @@
++using Application.API.Formulas.Configure;
++
++namespace Application.API.Formulas.Get;
++
++public sealed record GetFormulaResult(Guid Id, string Name, Dictionary<string, FieldConfiguration> Fields);
+Index: Infrastructure.Persistence/Configurations/RoleEntityConfiguration.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Infrastructure.Persistence/Configurations/RoleEntityConfiguration.cs b/Infrastructure.Persistence/Configurations/RoleEntityConfiguration.cs
+new file mode 100644
+--- /dev/null	(date 1780217278018)
++++ b/Infrastructure.Persistence/Configurations/RoleEntityConfiguration.cs	(date 1780217278018)
+@@ -0,0 +1,20 @@
++using Infrastructure.Persistence.Seeders;
++using Microsoft.AspNetCore.Identity;
++using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore.Metadata.Builders;
++
++namespace Infrastructure.Persistence.Configurations;
++
++internal sealed class RoleEntityConfiguration : IEntityTypeConfiguration<IdentityRole<Guid>>
++{
++    public void Configure(EntityTypeBuilder<IdentityRole<Guid>> builder)
++    {
++        builder.HasKey(x => x.Id);
++
++        builder.HasMany<IdentityUserRole<Guid>>()
++            .WithOne()
++            .HasForeignKey(ur => ur.RoleId);
++
++        builder.Seed();
++    }
++}
+Index: Application.API/Formulas/Submit/SubmitEvaluationCommand.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Submit/SubmitEvaluationCommand.cs b/Application.API/Formulas/Submit/SubmitEvaluationCommand.cs
+new file mode 100644
+--- /dev/null	(date 1780509127620)
++++ b/Application.API/Formulas/Submit/SubmitEvaluationCommand.cs	(date 1780509127620)
+@@ -0,0 +1,9 @@
++using Application.API.Common;
++using Domain.Expressions;
++
++namespace Application.API.Formulas.Submit;
++
++public sealed record SubmitEvaluationCommand(Guid UserId, Guid FormulaId, Guid EvaluationId, Dictionary<string, IValue> Arguments) : ICommand
++{
++    public const string Path = "/formulas/{formulaId:guid}/evaluations/{evaluationId:guid}/submit";
++}
+Index: Application.API/Formulas/Submit/SubmitCalculationHandler.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/Submit/SubmitCalculationHandler.cs b/Application.API/Formulas/Submit/SubmitCalculationHandler.cs
+new file mode 100644
+--- /dev/null	(date 1780509248256)
++++ b/Application.API/Formulas/Submit/SubmitCalculationHandler.cs	(date 1780509248256)
+@@ -0,0 +1,82 @@
++using Application.API.Common;
++using Domain.Common;
++using Domain.Expressions;
++using Domain.Formulas;
++using Infrastructure.Persistence.Contexts;
++using Microsoft.Extensions.Caching.Memory;
++using NLog;
++
++namespace Application.API.Formulas.Submit;
++
++public sealed class SubmitEvaluationHandler(IDataContext dataContext, IMemoryCache cache) : ICommandHandler<SubmitEvaluationCommand>
++{
++    private readonly Logger _logger =  LogManager.GetCurrentClassLogger();
++    
++    public async Task<Result> Handle(SubmitEvaluationCommand command, CancellationToken cancellationToken)
++    {
++        var formula = await dataContext.Formulas.FindAsync([command.FormulaId], cancellationToken);
++        if (formula is null)
++        {
++            return FormulaErrors.NotFound;
++        }
++
++        var cacheKey = $"{CacheKey.ExpressionEvaluationResult}_{command.FormulaId}_{command.EvaluationId}";
++        if (cache.TryGetValue(cacheKey, out decimal evaluationResult))
++        {
++            dataContext.Submissions.Add(new EvaluationSubmission
++            {
++                Id = command.EvaluationId,
++                FormulaId = command.FormulaId,
++                UserId = command.UserId,
++                Result = evaluationResult
++            });
++            
++            await dataContext.SaveChangesAsync(cancellationToken);
++            
++            cache.Remove(cacheKey);
++            return Result.Success();
++        }
++
++
++        var scopeCreationResult = EvaluationScopeFactory.Create(formula, command.Arguments);
++        if (!scopeCreationResult.IsSuccess)
++        {
++            return scopeCreationResult.Error;
++        }
++        
++        var scope = scopeCreationResult.Value!;
++
++        try
++        {
++            evaluationResult = AstEvaluator.Evaluate(formula.Expression, scope);
++        }
++        catch (UnknownFieldException)
++        {
++            return FormulaErrors.FieldNotFound;
++        }
++        catch (UnsupportedValueTypeException)
++        {
++            return FormulaErrors.UnsupportedValueType;
++        }
++        catch (UnsupportedOperandException ex)
++        {
++            _logger.Error(ex, "Encountered unsupported operand in {FormulaId} formula", command.FormulaId);
++            return FormulaErrors.Malformed;
++        }
++        catch (UnsupportedOperatorException ex)
++        {
++            _logger.Error(ex, "Encountered unsupported operator in {FormulaId} formula", command.FormulaId);
++            return FormulaErrors.Malformed;
++        }
++        
++        dataContext.Submissions.Add(new EvaluationSubmission
++        {
++            FormulaId = command.FormulaId,
++            UserId = command.UserId,
++            Result = evaluationResult
++        });
++            
++        await dataContext.SaveChangesAsync(cancellationToken);
++        return Result.Success();
++    }
++}
+Index: Application.API/Formulas/EvaluationScopeFactory.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Application.API/Formulas/EvaluationScopeFactory.cs b/Application.API/Formulas/EvaluationScopeFactory.cs
+new file mode 100644
+--- /dev/null	(date 1780507345643)
++++ b/Application.API/Formulas/EvaluationScopeFactory.cs	(date 1780507345643)
+@@ -0,0 +1,46 @@
++using Domain.Common;
++using Domain.Expressions;
++using Domain.Formulas;
++using NLog;
++
++namespace Application.API.Formulas;
++
++internal static class EvaluationScopeFactory
++{
++    private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
++    
++    public static Result<Dictionary<string, object>> Create(Formula formula, Dictionary<string, IValue> arguments)
++    {
++        Dictionary<string, object> scope = new();
++        
++        foreach (var (internalName, operand) in arguments)
++        {
++            var fieldConfiguration = formula.FieldsConfiguration.FirstOrDefault(x => x.InternalName == internalName);
++            if (fieldConfiguration is null)
++            {
++                Logger.Warn("Encountered unknown formula field: {FieldName}", internalName);
++                continue;
++            }
++
++            
++            switch (fieldConfiguration.Type)
++            {
++                case FieldType.Decimal when operand.TryGet<decimal>(out var decimalValue):
++                    scope.Add(internalName, decimalValue);
++                    break;
++                case FieldType.Integer when operand.TryGet<int>(out var intValue):
++                    scope.Add(internalName, intValue);
++                    break;
++                default:
++                    return FormulaErrors.FieldTypeMismatch;
++            }
++        }
++
++        if (scope.Count != formula.FieldsConfiguration.Count)
++        {
++            return FormulaErrors.ArgumentsCountMismatch;
++        }
++        
++        return scope;
++    }
++}
+Index: Web.API/Requests/Formulas/ConfigureRequest.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Requests/Formulas/ConfigureRequest.cs b/Web.API/Requests/Formulas/ConfigureRequest.cs
+new file mode 100644
+--- /dev/null	(date 1780221247543)
++++ b/Web.API/Requests/Formulas/ConfigureRequest.cs	(date 1780221247543)
+@@ -0,0 +1,5 @@
++using Application.API.Formulas.Configure;
++
++namespace Web.API.Requests.Formulas;
++
++internal sealed record ConfigureRequest(string Name, Dictionary<string, FieldConfiguration> Fields);
+Index: Domain/Formulas/EvaluationSubmission.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Domain/Formulas/EvaluationSubmission.cs b/Domain/Formulas/EvaluationSubmission.cs
+new file mode 100644
+--- /dev/null	(date 1780507521653)
++++ b/Domain/Formulas/EvaluationSubmission.cs	(date 1780507521653)
+@@ -0,0 +1,15 @@
++using Domain.Users;
++
++namespace Domain.Formulas;
++
++public sealed class EvaluationSubmission
++{
++    public Guid Id { get; init; } = Guid.CreateVersion7();
++    public decimal Result { get; init; }
++    
++    public Guid UserId { get; init; }
++    public User? User { get; init; }
++    
++    public Guid FormulaId { get; init; }
++    public Formula? Formula { get; init; }
++}
+Index: Web.API/Endpoints/Formulas/Submit.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Web.API/Endpoints/Formulas/Submit.cs b/Web.API/Endpoints/Formulas/Submit.cs
+new file mode 100644
+--- /dev/null	(date 1780509151366)
++++ b/Web.API/Endpoints/Formulas/Submit.cs	(date 1780509151366)
+@@ -0,0 +1,29 @@
++using Application.API.Formulas.Submit;
++using Domain.Expressions;
++using Microsoft.AspNetCore.Mvc;
++using Web.API.Infrastructure;
++
++namespace Web.API.Endpoints.Formulas;
++
++internal sealed class Submit : IEndpoint
++{
++    public void MapEndpoint(IEndpointRouteBuilder app)
++    {
++        app.MapPost(SubmitEvaluationCommand.Path, async (
++                HttpContext context,
++                Guid formulaId,
++                Guid evaluationId,
++                Dictionary<string, IValue> arguments,
++                SubmitEvaluationHandler handler,
++                CancellationToken cancellationToken) =>
++            {
++                var command = new SubmitEvaluationCommand(context.GetUserId(),formulaId, evaluationId, arguments);
++                var result = await handler.Handle(command, cancellationToken);
++                return result.Match(Results.NoContent, CustomResults.Problem);
++            })
++            .RequireAuthorization()
++            .WithTags(Tags.Formula)
++            .ProducesValidationProblem()
++            .Produces<NoContentResult>();
++    }
++}

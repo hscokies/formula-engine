@@ -26,6 +26,37 @@ namespace Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Domain.Formulas.EvaluationSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("FormulaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("formula_id");
+
+                    b.Property<decimal>("Result")
+                        .HasColumnType("numeric")
+                        .HasColumnName("result");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_submissions");
+
+                    b.HasIndex("FormulaId")
+                        .HasDatabaseName("ix_submissions_formula_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_submissions_user_id");
+
+                    b.ToTable("submissions", (string)null);
+                });
+
             modelBuilder.Entity("Domain.Formulas.Formula", b =>
                 {
                     b.Property<Guid>("Id")
@@ -45,16 +76,27 @@ namespace Infrastructure.Persistence.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NameNormalized")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("name");
+                        .HasColumnName("name_normalized");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
 
                     b.HasKey("Id")
                         .HasName("pk_formulas");
 
-                    b.HasIndex("Name")
-                        .IsUnique()
-                        .HasDatabaseName("ix_formulas_name");
+                    b.HasIndex("NameNormalized")
+                        .HasDatabaseName("ix_formulas_name_normalized");
+
+                    b.HasIndex("OwnerId")
+                        .HasDatabaseName("ix_formulas_owner_id");
 
                     b.ToTable("formulas", (string)null);
                 });
@@ -151,6 +193,15 @@ namespace Infrastructure.Persistence.Migrations
                         .HasName("pk_roles");
 
                     b.ToTable("roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("7ceb50b3-2d36-4a76-a8c7-ae2d5a924d4c"),
+                            ConcurrencyStamp = "1549794e-2db9-4e5b-bc8d-798627fc4d37",
+                            Name = "Admin",
+                            NormalizedName = "ADMIN"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -267,6 +318,9 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("UserId", "RoleId")
                         .HasName("pk_user_roles");
 
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_user_roles_role_id");
+
                     b.ToTable("user_roles", (string)null);
                 });
 
@@ -292,6 +346,49 @@ namespace Infrastructure.Persistence.Migrations
                         .HasName("pk_user_tokens");
 
                     b.ToTable("user_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Formulas.EvaluationSubmission", b =>
+                {
+                    b.HasOne("Domain.Formulas.Formula", "Formula")
+                        .WithMany()
+                        .HasForeignKey("FormulaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_submissions_formulas_formula_id");
+
+                    b.HasOne("Domain.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_submissions_users_user_id");
+
+                    b.Navigation("Formula");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Domain.Formulas.Formula", b =>
+                {
+                    b.HasOne("Domain.Users.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_formulas_users_owner_id");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_roles_roles_role_id");
                 });
 #pragma warning restore 612, 618
         }

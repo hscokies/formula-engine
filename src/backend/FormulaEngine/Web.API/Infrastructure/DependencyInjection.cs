@@ -1,7 +1,12 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.OpenApi;
+using NSwag;
+using NSwag.Generation.Processors.Security;
 using Web.API.Endpoints;
+using OpenApiSecurityScheme = NSwag.OpenApiSecurityScheme;
 
 namespace Web.API.Infrastructure;
 
@@ -27,8 +32,18 @@ internal static class DependencyInjection
             services.AddEndpointsApiExplorer();
             return services.AddOpenApiDocument(settings =>
             {
-                settings.Title = "Dungeon editor API";
+                settings.Title = "Formula Engine";
                 settings.Version = "v1";
+                
+                settings.AddSecurity(IdentityConstants.BearerScheme, new OpenApiSecurityScheme
+                {
+                    Type = OpenApiSecuritySchemeType.ApiKey,
+                    Name = "Authorization",
+                    In = OpenApiSecurityApiKeyLocation.Header,
+                    Description = "Access token"
+                });
+                
+                settings.OperationProcessors.Add(new AspNetCoreOperationSecurityScopeProcessor(IdentityConstants.BearerScheme));
             });
         }
 
@@ -37,7 +52,6 @@ internal static class DependencyInjection
             return services.ConfigureHttpJsonOptions(x =>
             {
                 x.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-                x.SerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
                 x.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
             });
         }
