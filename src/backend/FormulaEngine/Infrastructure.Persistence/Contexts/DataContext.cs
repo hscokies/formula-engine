@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence.Contexts;
 
-public class DataContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IDataContext
+internal class DataContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, IDataContext
 {
     public DataContext(DbContextOptions<DataContext> dbContext)
         : base(dbContext)
@@ -19,8 +19,9 @@ public class DataContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>, ID
     }
 
     public DbSet<Formula> Formulas { get; init; }
-    
-    
+    public DbSet<EvaluationSubmission> Submissions { get; init; }
+
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         builder.ApplyConfigurationsFromAssembly(typeof(DataContext).Assembly);

@@ -33,3 +33,10 @@ public sealed class UnsupportedValueTypeException(string valueType) : Exception
 {
     public string ValueType => valueType;
 }
+
+public sealed class UnsupportedOperandException(Type type) : Exception
+{
+    public Type OperandType => type;
+}
+
+public sealed class UnsupportedOperatorException(string message) : Exception(message);

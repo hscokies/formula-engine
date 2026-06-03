@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Domain.Expressions;
 using Domain.Formulas;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -9,10 +11,16 @@ public class FormulaEntityConfiguration : IEntityTypeConfiguration<Formula>
     public void Configure(EntityTypeBuilder<Formula> builder)
     {
         builder.HasKey(x => x.Id);
-        builder.Property(x => x.Name).HasMaxLength(255);
-        builder.HasIndex(x => x.Name).IsUnique();
+        builder.Property(x => x.NameNormalized).HasMaxLength(255).IsRequired();
+        builder.HasIndex(x => x.NameNormalized);
+        
+        builder.Property(x => x.OwnerId).IsRequired();
+        builder.HasOne(x => x.Owner).WithMany();
 
-        builder.Property(x => x.Expression).HasColumnType("jsonb");
-        builder.Property(x => x.FieldsConfiguration).HasColumnType("jsonb");
+        builder.Property(x => x.Expression)
+            .HasColumnType("jsonb");
+        
+        builder.Property(x => x.FieldsConfiguration)
+            .HasColumnType("jsonb");
     }
 }

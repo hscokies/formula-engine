@@ -8,6 +8,7 @@ public interface IReadOnlyDataContext
 {
     DatabaseFacade Database { get; }
     DbSet<Formula> Formulas { get; }
+    DbSet<EvaluationSubmission> Submissions { get; }
 }
 
 public interface IDataContext : IReadOnlyDataContext
