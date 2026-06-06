@@ -16,4 +16,6 @@ internal static class FormulaErrors
     public static Error UnsupportedValueType => Error.Validation("Formulas.UnsupportedValueType", "Unable to evaluate expression: One or more of the provided variables are not supported.");
     public static Error FieldTypeMismatch => Error.Validation("Formulas.FieldTypeMismatch", "Unable to evaluate expression: One or more of the provided variables doesn't match target field type.");
     public static Error ArgumentsCountMismatch => Error.Validation("Formulas.ArgumentsCountMismatch", "Unable to evaluate expression: Arguments count mismatch.");
+    
+    public static Error UnableToEvaluate => Error.Validation("Formulas.UnableToEvaluate", "Unable to evaluate expression.");
 }

@@ -52,6 +52,14 @@ public sealed class EvaluateFormulaHandler(IReadOnlyDataContext dataContext, IMe
             _logger.Error(ex, "Encountered unsupported operator in {FormulaId} formula", command.Id);
             return FormulaErrors.Malformed;
         }
+        catch (Exception ex)
+        {
+            _logger
+                .WithProperty(nameof(command.Arguments), command.Arguments)
+                .Error(ex, "Encountered unhandled error in {FormulaId} formula", command.Id);
+            
+            return FormulaErrors.UnableToEvaluate;
+        }
 
         var evaluationId = Guid.NewGuid();
         memoryCache.Set($"{CacheKey.ExpressionEvaluationResult}_{formula.Id}_{evaluationId}", evaluationResult,
