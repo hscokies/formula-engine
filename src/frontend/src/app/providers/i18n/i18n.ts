@@ -14,8 +14,3 @@ export const i18n = createI18n({
     fallbackLocale: Locale.en,
     messages: loadLocalizationFiles(import.meta.glob('@/shared/i18n/*.json', { eager: true, import: 'default' })),
 });
-
-console.log(
-    'i18n messages:',
-    JSON.stringify(loadLocalizationFiles(import.meta.glob('@/shared/i18n/*.json', { eager: true, import: 'default' })))
-);

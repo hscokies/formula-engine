@@ -1,28 +1,112 @@
 {
+    "Common": {
+        "ProjectName": "Formula engine",
+        "Cancel": "Cancel",
+        "Continue": "Continue",
+        "Email": "Email",
+        "Password": "Password",
+        "Search": "Search",
+        "Refresh": "Refresh",
+        "Expression": "Expression",
+        "Fields": "Fields",
+        "InternalName": "Internal name",
+        "Label": "Label",
+        "Type": "Type",
+        "Result": "Result",
+        "SubmissionId": "Submission ID",
+        "UserId": "User ID",
+        "Formulas": "Formulas",
+        "SignOut": "Sign out",
+        "CreateFormula": "Create formula",
+        "CopyLink": "Copy link",
+        "Open": "Open"
+    },
+    "Fields": {
+        "Integer": "Integer",
+        "Decimal": "Decimal"
+    },
+    "Errors": {
+        "UnableToSignIn": "Unable to sign in. Check your credentials.",
+        "UnableToCreateAccount": "Unable to create account.",
+        "PasswordsDoNotMatch": "Passwords do not match.",
+        "PasswordTooShort": "Password must be at least 12 characters long.",
+        "UnableToCreateFormula": "Unable to create formula.",
+        "UnableToLoadFormulaConfiguration": "Unable to load formula configuration.",
+        "UnableToSaveFormulaConfiguration": "Unable to save formula configuration.",
+        "UnableToLoadFormula": "Unable to load formula.",
+        "UnableToCalculateFormula": "Unable to calculate the formula.",
+        "UnableToSubmitCalculation": "Unable to submit the calculation.",
+        "UnableToLoadFormulas": "Unable to load formulas.",
+        "UnableToLoadSubmissions": "Unable to load submissions.",
+        "UnableToCopyLink": "Unable to copy link",
+        "EnterFormulaExpression": "Enter a formula expression.",
+        "EnterFormulaName": "Enter a formula name."
+    },
+    "Messages": {
+        "CalculationSubmitted": "Calculation submitted successfully.",
+        "FormLinkCopied": "Form link copied to clipboard"
+    },
     "Pages": {
         "Login": {
-            "Title": "Sign in"
+            "Title": "Sign in",
+            "Description": "Use your account to access formulas.",
+            "EmailPlaceholder": "you:{'@'}example.com",
+            "PasswordPlaceholder": "Your password",
+            "Submit": "Sign in",
+            "CreateAccount": "Create an account"
         },
         "Register": {
-            "Title": "Sign up"
+            "Title": "Create account",
+            "Description": "Password must be at least 12 characters and include upper, lower, digit, and special characters.",
+            "EmailPlaceholder": "you:{'@'}example.com",
+            "PasswordPlaceholder": "Create a password",
+            "ConfirmPassword": "Confirm password",
+            "ConfirmPasswordPlaceholder": "Repeat your password",
+            "Submit": "Sign up",
+            "SignIn": "Already have an account? Sign in"
         },
         "ViewFormulas": {
-            "Title": "View available formulas"
+            "Title": "View available formulas",
+            "CardTitle": "Formulas",
+            "Description": "Open a formula to calculate and submit values. Admins can create new formulas.",
+            "AdminOnlyInfo": "Formula listing is available to administrators. Open a formula directly if you have its link.",
+            "SearchPlaceholder": "Search by name",
+            "Empty": "No formulas found"
         },
         "ViewCalculations": {
-            "Title": "View submitted calculations"
+            "Title": "View submitted calculations",
+            "TitleWithName": "Submissions — {name}",
+            "TitleFallback": "Submissions",
+            "Description": "Submitted calculation results for this formula.",
+            "Empty": "No submissions yet",
+            "BackToFormula": "Back to formula"
         },
         "CreateFormula": {
-            "Title": "Create new formula"
+            "Title": "Create new formula",
+            "CardTitle": "Create formula",
+            "Description": "Enter a mathematical expression and name. Use variable names for fields, for example",
+            "DescriptionOr": "or",
+            "Example1": "price * quantity",
+            "Example2": "sqrt(a^2 + b^2)",
+            "FormulaName": "Formula name",
+            "FormulaNamePlaceholder": "Sales tax calculator",
+            "ExpressionPlaceholder": "price * quantity"
         },
         "ConfigureFormula": {
-            "Title": "Configure formula"
+            "Title": "Configure formula",
+            "CardTitle": "Configure formula",
+            "Description": "Set the form name and configure each detected field before publishing.",
+            "FormName": "Form name",
+            "FormNamePlaceholder": "Sales tax calculator",
+            "Save": "Save formula"
         },
         "Formula": {
-            "Title": "Formula"
+            "Title": "Formula",
+            "Description": "Enter field values, then calculate and submit your result.",
+            "ViewSubmissions": "View submissions",
+            "Calculate": "Calculate",
+            "Submit": "Submit",
+            "EnterValueFor": "Enter a value for {label}."
         }
-    },
-    "Common": {
-        "ProjectName": "Formula engine"
     }
 }

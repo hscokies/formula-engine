@@ -1,1 +1,1 @@
-export { default as ConfigureFormula } from './ui/configureFormula.vue';
+export { default as ConfigureFormulaPage } from './ui/configureFormula.vue';
