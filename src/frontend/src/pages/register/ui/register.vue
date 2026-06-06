@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { NAlert, NButton, NCard, NForm, NFormItem, NInput, NSpace, NText } from 'naive-ui';
 import { Route } from '@/app/providers/router';
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/shared/stores/auth.ts';
 
 defineOptions({ name: 'RegisterPage' });
 
+const { t } = useI18n();
 const router = useRouter();
 const authStore = useAuthStore();
 
@@ -19,12 +21,12 @@ const errorMessage = ref<string | null>(null);
 
 async function handleSubmit() {
     if (password.value !== confirmPassword.value) {
-        errorMessage.value = 'Passwords do not match.';
+        errorMessage.value = t('Errors.PasswordsDoNotMatch');
         return;
     }
 
     if (password.value.length < 12) {
-        errorMessage.value = 'Password must be at least 12 characters long.';
+        errorMessage.value = t('Errors.PasswordTooShort');
         return;
     }
 
@@ -35,7 +37,7 @@ async function handleSubmit() {
         await authStore.register(email.value, password.value);
         await router.push({ name: Route.ViewFormulas });
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to create account.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToCreateAccount'));
     } finally {
         loading.value = false;
     }
@@ -43,44 +45,47 @@ async function handleSubmit() {
 </script>
 
 <template>
-    <div class="auth-page">
-        <NCard class="auth-page__card" title="Create account">
-            <NText depth="3">
-                Password must be at least 12 characters and include upper, lower, digit, and special
-                characters.
-            </NText>
+    <div :class="$cn()">
+        <NCard :class="$cn('card')" :title="t('Pages.Register.Title')">
+            <NText depth="3">{{ t('Pages.Register.Description') }}</NText>
 
-            <NAlert v-if="errorMessage" type="error" class="auth-page__alert">
+            <NAlert v-if="errorMessage" type="error" :class="$cn('alert')">
                 {{ errorMessage }}
             </NAlert>
 
-            <NForm class="auth-page__form" @submit.prevent="handleSubmit">
-                <NFormItem label="Email">
-                    <NInput v-model:value="email" type="text" placeholder="you@example.com" />
+            <NForm :class="$cn('form')" @submit.prevent="handleSubmit">
+                <NFormItem :label="t('Common.Email')">
+                    <NInput
+                        v-model:value="email"
+                        type="text"
+                        :placeholder="t('Pages.Register.EmailPlaceholder')"
+                    />
                 </NFormItem>
 
-                <NFormItem label="Password">
+                <NFormItem :label="t('Common.Password')">
                     <NInput
                         v-model:value="password"
                         type="password"
                         show-password-on="click"
-                        placeholder="Create a password"
+                        :placeholder="t('Pages.Register.PasswordPlaceholder')"
                     />
                 </NFormItem>
 
-                <NFormItem label="Confirm password">
+                <NFormItem :label="t('Pages.Register.ConfirmPassword')">
                     <NInput
                         v-model:value="confirmPassword"
                         type="password"
                         show-password-on="click"
-                        placeholder="Repeat your password"
+                        :placeholder="t('Pages.Register.ConfirmPasswordPlaceholder')"
                     />
                 </NFormItem>
 
                 <NSpace vertical>
-                    <NButton type="primary" attr-type="submit" block :loading="loading">Sign up</NButton>
+                    <NButton type="primary" attr-type="submit" block :loading="loading">
+                        {{ t('Pages.Register.Submit') }}
+                    </NButton>
                     <NButton text block @click="router.push({ name: Route.Login })">
-                        Already have an account? Sign in
+                        {{ t('Pages.Register.SignIn') }}
                     </NButton>
                 </NSpace>
             </NForm>
@@ -89,23 +94,23 @@ async function handleSubmit() {
 </template>
 
 <style scoped>
-.auth-page {
+.register-page {
     min-height: calc(100vh - 48px);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.auth-page__card {
+.register-page__card {
     width: 100%;
     max-width: 420px;
 }
 
-.auth-page__alert {
+.register-page__alert {
     margin-top: 16px;
 }
 
-.auth-page__form {
+.register-page__form {
     margin-top: 24px;
 }
 </style>

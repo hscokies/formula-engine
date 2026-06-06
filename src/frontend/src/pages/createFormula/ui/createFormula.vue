@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { NAlert, NButton, NCard, NForm, NFormItem, NInput, NSpace, NText } from 'naive-ui';
 import { Route } from '@/app/providers/router';
@@ -8,6 +9,7 @@ import { getProblemMessage } from '@/shared/lib/errors/problemDetails.ts';
 
 defineOptions({ name: 'CreateFormulaPage' });
 
+const { t } = useI18n();
 const router = useRouter();
 
 const expression = ref('');
@@ -20,12 +22,12 @@ async function handleContinue() {
     const trimmedName = name.value.trim();
 
     if (!trimmedExpression) {
-        errorMessage.value = 'Enter a formula expression.';
+        errorMessage.value = t('Errors.EnterFormulaExpression');
         return;
     }
 
     if (!trimmedName) {
-        errorMessage.value = 'Enter a formula name.';
+        errorMessage.value = t('Errors.EnterFormulaName');
         return;
     }
 
@@ -44,7 +46,7 @@ async function handleContinue() {
             },
         });
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to create formula.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToCreateFormula'));
     } finally {
         loading.value = false;
     }
@@ -52,44 +54,53 @@ async function handleContinue() {
 </script>
 
 <template>
-    <NCard title="Create formula">
+    <NCard :title="t('Pages.CreateFormula.CardTitle')">
         <NText depth="3">
-            Enter a mathematical expression and name. Use variable names for fields, for example
-            <code>price * quantity</code> or <code>sqrt(a^2 + b^2)</code>.
+            {{ t('Pages.CreateFormula.Description') }}
+            <code>{{ t('Pages.CreateFormula.Example1') }}</code>
+            {{ t('Pages.CreateFormula.DescriptionOr') }}
+            <code>{{ t('Pages.CreateFormula.Example2') }}</code>.
         </NText>
 
-        <NAlert v-if="errorMessage" type="error" class="create-formula__alert">
+        <NAlert v-if="errorMessage" type="error" :class="$cn('alert')">
             {{ errorMessage }}
         </NAlert>
 
-        <NForm class="create-formula__form" @submit.prevent="handleContinue">
-            <NFormItem label="Formula name">
-                <NInput v-model:value="name" placeholder="Sales tax calculator" />
+        <NForm :class="$cn('form')" @submit.prevent="handleContinue">
+            <NFormItem :label="t('Pages.CreateFormula.FormulaName')">
+                <NInput
+                    v-model:value="name"
+                    :placeholder="t('Pages.CreateFormula.FormulaNamePlaceholder')"
+                />
             </NFormItem>
 
-            <NFormItem label="Expression">
+            <NFormItem :label="t('Common.Expression')">
                 <NInput
                     v-model:value="expression"
                     type="textarea"
                     :autosize="{ minRows: 4, maxRows: 10 }"
-                    placeholder="price * quantity"
+                    :placeholder="t('Pages.CreateFormula.ExpressionPlaceholder')"
                 />
             </NFormItem>
 
             <NSpace>
-                <NButton type="primary" attr-type="submit" :loading="loading">Continue</NButton>
-                <NButton @click="router.push({ name: Route.ViewFormulas })">Cancel</NButton>
+                <NButton type="primary" attr-type="submit" :loading="loading">
+                    {{ t('Common.Continue') }}
+                </NButton>
+                <NButton @click="router.push({ name: Route.ViewFormulas })">
+                    {{ t('Common.Cancel') }}
+                </NButton>
             </NSpace>
         </NForm>
     </NCard>
 </template>
 
 <style scoped>
-.create-formula__alert {
+.create-formula-page__alert {
     margin-top: 16px;
 }
 
-.create-formula__form {
+.create-formula-page__form {
     margin-top: 24px;
 }
 </style>

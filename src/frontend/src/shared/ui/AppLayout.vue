@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { NButton, NLayout, NLayoutContent, NLayoutHeader, NSpace, NText } from 'naive-ui';
 import { Route } from '@/app/providers/router';
@@ -7,6 +8,7 @@ import { useAuthStore } from '@/shared/stores/auth.ts';
 
 defineOptions({ name: 'AppLayout' });
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -20,11 +22,11 @@ async function handleLogout() {
 </script>
 
 <template>
-    <NLayout class="app-layout">
-        <NLayoutHeader v-if="!isAuthPage" bordered class="app-layout__header">
-            <NSpace align="center" justify="space-between" class="app-layout__header-inner">
-                <NText strong class="app-layout__brand" @click="router.push({ name: Route.ViewFormulas })">
-                    Formula Engine
+    <NLayout :class="$cn()">
+        <NLayoutHeader v-if="!isAuthPage" bordered :class="$cn('header')">
+            <NSpace align="center" justify="space-between" :class="$cn('header-inner')">
+                <NText strong :class="$cn('brand')" @click="router.push({ name: Route.ViewFormulas })">
+                    {{ t('Common.ProjectName') }}
                 </NText>
 
                 <NSpace>
@@ -33,15 +35,17 @@ async function handleLogout() {
                         quaternary
                         @click="router.push({ name: Route.CreateFormula })"
                     >
-                        Create formula
+                        {{ t('Common.CreateFormula') }}
                     </NButton>
-                    <NButton quaternary @click="router.push({ name: Route.ViewFormulas })">Formulas</NButton>
-                    <NButton quaternary @click="handleLogout">Sign out</NButton>
+                    <NButton quaternary @click="router.push({ name: Route.ViewFormulas })">
+                        {{ t('Common.Formulas') }}
+                    </NButton>
+                    <NButton quaternary @click="handleLogout">{{ t('Common.SignOut') }}</NButton>
                 </NSpace>
             </NSpace>
         </NLayoutHeader>
 
-        <NLayoutContent class="app-layout__content">
+        <NLayoutContent :class="$cn('content')">
             <slot />
         </NLayoutContent>
     </NLayout>

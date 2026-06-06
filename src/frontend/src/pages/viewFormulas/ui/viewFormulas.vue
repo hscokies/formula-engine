@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { NAlert, NButton, NCard, NEmpty, NInput, NList, NListItem, NSpace, NSpin, NText, useMessage } from 'naive-ui';
 import { Route } from '@/app/providers/router';
@@ -10,6 +11,7 @@ import { useAuthStore } from '@/shared/stores/auth.ts';
 
 defineOptions({ name: 'ViewFormulasPage' });
 
+const { t } = useI18n();
 const router = useRouter();
 const message = useMessage();
 const authStore = useAuthStore();
@@ -32,7 +34,7 @@ async function loadFormulas() {
         const response = await formulasApi.list(search.value || undefined);
         items.value = response.items;
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to load formulas.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToLoadFormulas'));
     } finally {
         loading.value = false;
     }
@@ -41,9 +43,9 @@ async function loadFormulas() {
 async function handleCopyLink(formulaId: string) {
     try {
         await copyFormulaLink(router, formulaId);
-        message.success('Form link copied to clipboard');
+        message.success(t('Messages.FormLinkCopied'));
     } catch {
-        message.error('Unable to copy link');
+        message.error(t('Errors.UnableToCopyLink'));
     }
 }
 
@@ -51,38 +53,35 @@ onMounted(loadFormulas);
 </script>
 
 <template>
-    <NCard title="Formulas">
+    <NCard :title="t('Pages.ViewFormulas.CardTitle')">
         <NSpace vertical>
-            <NText depth="3">
-                Open a formula to calculate and submit values. Admins can create new formulas.
-            </NText>
+            <NText depth="3">{{ t('Pages.ViewFormulas.Description') }}</NText>
 
             <NAlert v-if="!authStore.isAdmin" type="info">
-                Formula listing is available to administrators. Open a formula directly if you have
-                its link.
+                {{ t('Pages.ViewFormulas.AdminOnlyInfo') }}
             </NAlert>
 
-            <NAlert v-if="errorMessage" type="error">
+            <NAlert v-if="errorMessage" type="error" :class="$cn('alert')">
                 {{ errorMessage }}
             </NAlert>
 
             <NSpace v-if="authStore.isAdmin">
-                <NInput v-model:value="search" placeholder="Search by name" />
-                <NButton @click="loadFormulas">Search</NButton>
+                <NInput v-model:value="search" :placeholder="t('Pages.ViewFormulas.SearchPlaceholder')" />
+                <NButton @click="loadFormulas">{{ t('Common.Search') }}</NButton>
                 <NButton type="primary" @click="router.push({ name: Route.CreateFormula })">
-                    Create formula
+                    {{ t('Common.CreateFormula') }}
                 </NButton>
             </NSpace>
 
             <NSpin :show="loading">
                 <NList v-if="authStore.isAdmin && items.length" bordered>
                     <NListItem v-for="item in items" :key="item.id">
-                        <NSpace align="center" justify="space-between" style="width: 100%">
+                        <NSpace align="center" justify="space-between" :class="$cn('list-item')">
                             <NText>{{ item.name }}</NText>
                             <NSpace>
-                                <NButton @click="handleCopyLink(item.id)">Copy link</NButton>
+                                <NButton @click="handleCopyLink(item.id)">{{ t('Common.CopyLink') }}</NButton>
                                 <NButton @click="router.push({ name: Route.Formula, params: { id: item.id } })">
-                                    Open
+                                    {{ t('Common.Open') }}
                                 </NButton>
                             </NSpace>
                         </NSpace>
@@ -91,9 +90,15 @@ onMounted(loadFormulas);
 
                 <NEmpty
                     v-else-if="authStore.isAdmin && !loading"
-                    description="No formulas found"
+                    :description="t('Pages.ViewFormulas.Empty')"
                 />
             </NSpin>
         </NSpace>
     </NCard>
 </template>
+
+<style scoped>
+.view-formulas-page__list-item {
+    width: 100%;
+}
+</style>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { Route } from '@/app/providers/router';
 import { NAlert, NButton, NCard, NForm, NFormItem, NInputNumber, NSpace, NSpin, NText, useMessage } from 'naive-ui';
@@ -10,6 +11,7 @@ import { useAuthStore } from '@/shared/stores/auth.ts';
 
 defineOptions({ name: 'FormulaPage' });
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const message = useMessage();
@@ -43,7 +45,7 @@ const isCalculated = computed(
     () =>
         evaluationId.value !== null &&
         calculatedSnapshot.value !== null &&
-        calculatedSnapshot.value === valuesSnapshot.value
+        calculatedSnapshot.value === valuesSnapshot.value,
 );
 
 function buildArguments(): FormulaArguments {
@@ -52,7 +54,7 @@ function buildArguments(): FormulaArguments {
     for (const field of sortedFields.value) {
         const value = fieldValues.value[field.internalName];
         if (value === null || value === undefined) {
-            throw new Error(`Enter a value for ${field.label}.`);
+            throw new Error(t('Pages.Formula.EnterValueFor', { label: field.label }));
         }
 
         if (field.type === 'Integer') {
@@ -86,7 +88,7 @@ async function loadFormula() {
         formula.value = await formulasApi.get(formulaId.value);
         fieldValues.value = Object.fromEntries(Object.keys(formula.value.fields).map(fieldName => [fieldName, null]));
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to load formula.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToLoadFormula'));
     } finally {
         loading.value = false;
     }
@@ -104,7 +106,7 @@ async function handleCalculate() {
         result.value = response.result;
         calculatedSnapshot.value = valuesSnapshot.value;
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to calculate the formula.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToCalculateFormula'));
     } finally {
         acting.value = false;
     }
@@ -121,10 +123,10 @@ async function handleSubmit() {
     try {
         const args = buildArguments();
         await formulasApi.submit(formulaId.value, evaluationId.value, args);
-        message.success('Calculation submitted successfully.');
+        message.success(t('Messages.CalculationSubmitted'));
         resetCalculation();
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to submit the calculation.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToSubmitCalculation'));
     } finally {
         acting.value = false;
     }
@@ -140,40 +142,42 @@ onMounted(loadFormula);
 <template>
     <NSpin :show="loading">
         <NCard v-if="formula" :title="formula.name">
-            <NSpace align="center" justify="space-between" class="formula-page__header">
-                <NText depth="3">Enter field values, then calculate and submit your result.</NText>
+            <NSpace align="center" justify="space-between" :class="$cn('header')">
+                <NText depth="3">{{ t('Pages.Formula.Description') }}</NText>
                 <NButton
                     v-if="isAdmin"
                     quaternary
                     @click="router.push({ name: Route.ViewCalculations, params: { id: formulaId } })"
                 >
-                    View submissions
+                    {{ t('Pages.Formula.ViewSubmissions') }}
                 </NButton>
             </NSpace>
 
-            <NAlert v-if="errorMessage" type="error" class="formula-page__alert">
+            <NAlert v-if="errorMessage" type="error" :class="$cn('alert')">
                 {{ errorMessage }}
             </NAlert>
 
-            <NForm class="formula-page__form">
+            <NForm :class="$cn('form')">
                 <NFormItem v-for="field in sortedFields" :key="field.internalName" :label="field.label">
                     <NInputNumber
                         v-model:value="fieldValues[field.internalName]"
-                        class="formula-page__input"
+                        :class="$cn('input')"
                         :precision="inputPrecision(field.type)"
                         :placeholder="field.type"
                     />
                 </NFormItem>
 
-                <NAlert v-if="result !== null" type="info" class="formula-page__result">
-                    Result: <strong>{{ result }}</strong>
+                <NAlert v-if="result !== null" type="info" :class="$cn('result')">
+                    {{ t('Common.Result') }}: <strong>{{ result }}</strong>
                 </NAlert>
 
                 <NSpace>
                     <NButton v-if="isCalculated" type="primary" :loading="acting" @click="handleSubmit">
-                        Submit
+                        {{ t('Pages.Formula.Submit') }}
                     </NButton>
-                    <NButton v-else type="primary" :loading="acting" @click="handleCalculate"> Calculate </NButton>
+                    <NButton v-else type="primary" :loading="acting" @click="handleCalculate">
+                        {{ t('Pages.Formula.Calculate') }}
+                    </NButton>
                 </NSpace>
             </NForm>
         </NCard>

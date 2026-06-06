@@ -7,40 +7,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="14eaefbc-8c79-4f81-9cbb-bab7e343e044" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../../../.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../../.idea/dataSources.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../../.idea/formula-engine.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../../.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../../.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../../.idea/prettier.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../../.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/api/auth.types.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/api/authApi.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/api/formulas.types.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/api/formulasApi.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/lib/auth/tokenStorage.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/lib/errors/problemDetails.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/lib/formula/copyFormulaLink.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/stores/auth.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../../frontend/src/shared/ui/AppLayout.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.FormulaEngine/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.FormulaEngine/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/definitions/router.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/definitions/router.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/src/app/main.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/app/main.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/app/providers/router/router.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/app/providers/router/router.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/src/app/ui/app.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/app/ui/app.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/calculations/ui/calculations.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/calculations/ui/calculations.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/configureFormula/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/configureFormula/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/configureFormula/ui/configureFormula.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/configureFormula/ui/configureFormula.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/createFormula/ui/createFormula.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/createFormula/ui/createFormula.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/formula/ui/formula.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/formula/ui/formula.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/login/ui/login.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/login/ui/login.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/register/ui/register.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/register/ui/register.vue" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../frontend/src/pages/viewFormulas/ui/viewFormulas.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/pages/viewFormulas/ui/viewFormulas.vue" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/src/shared/api/httpClient.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/shared/api/httpClient.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/src/shared/api/httpClient.types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/shared/api/httpClient.types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/src/shared/api/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/shared/api/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../frontend/yarn.lock" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/yarn.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../frontend/src/shared/ui/AppLayout.vue" beforeDir="false" afterPath="$PROJECT_DIR$/../../frontend/src/shared/ui/AppLayout.vue" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -236,7 +211,7 @@
       <workItem from="1780506116680" duration="3431000" />
       <workItem from="1780509728845" duration="162000" />
       <workItem from="1780509912782" duration="18000" />
-      <workItem from="1780767826642" duration="1819000" />
+      <workItem from="1780767826642" duration="2411000" />
     </task>
     <task id="LOCAL-00001" summary="feat: add base infrastructure">
       <option name="closed" value="true" />

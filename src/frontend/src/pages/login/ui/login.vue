@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { NAlert, NButton, NCard, NForm, NFormItem, NInput, NSpace, NText } from 'naive-ui';
 import { Route } from '@/app/providers/router';
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/shared/stores/auth.ts';
 
 defineOptions({ name: 'LoginPage' });
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
@@ -26,7 +28,7 @@ async function handleSubmit() {
         const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null;
         await router.push(redirect ?? { name: Route.ViewFormulas });
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to sign in. Check your credentials.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToSignIn'));
     } finally {
         loading.value = false;
     }
@@ -34,32 +36,38 @@ async function handleSubmit() {
 </script>
 
 <template>
-    <div class="auth-page">
-        <NCard class="auth-page__card" title="Sign in">
-            <NText depth="3">Use your account to access formulas.</NText>
+    <div :class="$cn()">
+        <NCard :class="$cn('card')" :title="t('Pages.Login.Title')">
+            <NText depth="3">{{ t('Pages.Login.Description') }}</NText>
 
-            <NAlert v-if="errorMessage" type="error" class="auth-page__alert">
+            <NAlert v-if="errorMessage" type="error" :class="$cn('alert')">
                 {{ errorMessage }}
             </NAlert>
 
-            <NForm class="auth-page__form" @submit.prevent="handleSubmit">
-                <NFormItem label="Email">
-                    <NInput v-model:value="email" type="text" placeholder="you@example.com" />
+            <NForm :class="$cn('form')" @submit.prevent="handleSubmit">
+                <NFormItem :label="t('Common.Email')">
+                    <NInput
+                        v-model:value="email"
+                        type="text"
+                        :placeholder="t('Pages.Login.EmailPlaceholder')"
+                    />
                 </NFormItem>
 
-                <NFormItem label="Password">
+                <NFormItem :label="t('Common.Password')">
                     <NInput
                         v-model:value="password"
                         type="password"
                         show-password-on="click"
-                        placeholder="Your password"
+                        :placeholder="t('Pages.Login.PasswordPlaceholder')"
                     />
                 </NFormItem>
 
                 <NSpace vertical>
-                    <NButton type="primary" attr-type="submit" block :loading="loading">Sign in</NButton>
+                    <NButton type="primary" attr-type="submit" block :loading="loading">
+                        {{ t('Pages.Login.Submit') }}
+                    </NButton>
                     <NButton text block @click="router.push({ name: Route.Register })">
-                        Create an account
+                        {{ t('Pages.Login.CreateAccount') }}
                     </NButton>
                 </NSpace>
             </NForm>
@@ -68,23 +76,23 @@ async function handleSubmit() {
 </template>
 
 <style scoped>
-.auth-page {
+.login-page {
     min-height: calc(100vh - 48px);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.auth-page__card {
+.login-page__card {
     width: 100%;
     max-width: 420px;
 }
 
-.auth-page__alert {
+.login-page__alert {
     margin-top: 16px;
 }
 
-.auth-page__form {
+.login-page__form {
     margin-top: 24px;
 }
 </style>

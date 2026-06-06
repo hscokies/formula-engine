@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import {
     NAlert,
@@ -32,6 +33,7 @@ interface ConfigureNavigationState {
     fields?: string[];
 }
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 
@@ -45,10 +47,10 @@ const loading = ref(true);
 const saving = ref(false);
 const errorMessage = ref<string | null>(null);
 
-const typeOptions = [
-    { label: 'Integer', value: 'Integer' as FieldType },
-    { label: 'Decimal', value: 'Decimal' as FieldType },
-];
+const typeOptions = computed(() => [
+    { label: t('Fields.Integer'), value: 'Integer' as FieldType },
+    { label: t('Fields.Decimal'), value: 'Decimal' as FieldType },
+]);
 
 function initializeFieldState(fields: string[]) {
     fieldNames.value = fields;
@@ -91,7 +93,7 @@ onMounted(async () => {
             await loadFromApi();
         }
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to load formula configuration.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToLoadFormulaConfiguration'));
     } finally {
         loading.value = false;
     }
@@ -99,7 +101,7 @@ onMounted(async () => {
 
 async function handleSave() {
     if (!name.value.trim()) {
-        errorMessage.value = 'Enter a formula name.';
+        errorMessage.value = t('Errors.EnterFormulaName');
         return;
     }
 
@@ -108,7 +110,7 @@ async function handleSave() {
 
     try {
         const fields = Object.fromEntries(
-            fieldNames.value.map((fieldName) => [
+            fieldNames.value.map(fieldName => [
                 fieldName,
                 {
                     label: fieldLabels.value[fieldName] || fieldName,
@@ -120,7 +122,7 @@ async function handleSave() {
         await formulasApi.configure(formulaId.value, name.value.trim(), fields);
         await router.push({ name: Route.Formula, params: { id: formulaId.value } });
     } catch (error) {
-        errorMessage.value = getProblemMessage(error, 'Unable to save formula configuration.');
+        errorMessage.value = getProblemMessage(error, t('Errors.UnableToSaveFormulaConfiguration'));
     } finally {
         saving.value = false;
     }
@@ -129,31 +131,32 @@ async function handleSave() {
 
 <template>
     <NSpin :show="loading">
-        <NCard title="Configure formula">
-            <NText depth="3">
-                Set the form name and configure each detected field before publishing.
-            </NText>
+        <NCard :title="t('Pages.ConfigureFormula.CardTitle')">
+            <NText depth="3">{{ t('Pages.ConfigureFormula.Description') }}</NText>
 
-            <NAlert v-if="errorMessage" type="error" class="configure-formula__alert">
+            <NAlert v-if="errorMessage" type="error" :class="$cn('alert')">
                 {{ errorMessage }}
             </NAlert>
 
-            <NForm v-if="!loading" class="configure-formula__form" @submit.prevent="handleSave">
-                <NFormItem v-if="expression" label="Expression">
+            <NForm v-if="!loading" :class="$cn('form')" @submit.prevent="handleSave">
+                <NFormItem v-if="expression" :label="t('Common.Expression')">
                     <NInput :value="expression" type="textarea" :autosize="{ minRows: 2 }" readonly />
                 </NFormItem>
 
-                <NFormItem label="Form name">
-                    <NInput v-model:value="name" placeholder="Sales tax calculator" />
+                <NFormItem :label="t('Pages.ConfigureFormula.FormName')">
+                    <NInput
+                        v-model:value="name"
+                        :placeholder="t('Pages.ConfigureFormula.FormNamePlaceholder')"
+                    />
                 </NFormItem>
 
-                <NText strong>Fields</NText>
-                <NTable :bordered="false" :single-line="false" class="configure-formula__table">
+                <NText strong>{{ t('Common.Fields') }}</NText>
+                <NTable :bordered="false" :single-line="false" :class="$cn('table')">
                     <NThead>
                         <NTr>
-                            <NTh>Internal name</NTh>
-                            <NTh>Label</NTh>
-                            <NTh>Type</NTh>
+                            <NTh>{{ t('Common.InternalName') }}</NTh>
+                            <NTh>{{ t('Common.Label') }}</NTh>
+                            <NTh>{{ t('Common.Type') }}</NTh>
                         </NTr>
                     </NThead>
                     <NTbody>
@@ -171,9 +174,13 @@ async function handleSave() {
                     </NTbody>
                 </NTable>
 
-                <NSpace class="configure-formula__actions">
-                    <NButton type="primary" attr-type="submit" :loading="saving">Save formula</NButton>
-                    <NButton @click="router.push({ name: Route.ViewFormulas })">Cancel</NButton>
+                <NSpace :class="$cn('actions')">
+                    <NButton type="primary" attr-type="submit" :loading="saving">
+                        {{ t('Pages.ConfigureFormula.Save') }}
+                    </NButton>
+                    <NButton @click="router.push({ name: Route.ViewFormulas })">
+                        {{ t('Common.Cancel') }}
+                    </NButton>
                 </NSpace>
             </NForm>
         </NCard>
@@ -181,19 +188,19 @@ async function handleSave() {
 </template>
 
 <style scoped>
-.configure-formula__alert {
+.configure-formula-page__alert {
     margin-top: 16px;
 }
 
-.configure-formula__form {
+.configure-formula-page__form {
     margin-top: 24px;
 }
 
-.configure-formula__table {
+.configure-formula-page__table {
     margin-top: 12px;
 }
 
-.configure-formula__actions {
+.configure-formula-page__actions {
     margin-top: 24px;
 }
 </style>

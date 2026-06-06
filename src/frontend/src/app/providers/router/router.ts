@@ -97,7 +97,7 @@ export const router = createRouter({
     ],
 });
 
-router.beforeEach(async (to, _, next) => {
+router.beforeEach(async (to) => {
     document.title = to.meta.title ?? i18n.global.t('Common.ProjectName');
 
     const authStore = useAuthStore();
@@ -107,13 +107,11 @@ router.beforeEach(async (to, _, next) => {
     const isPublicRoute = publicRoutes.has(routeName);
 
     if (to.meta.guestOnly && authStore.isAuthenticated) {
-        next({ name: Route.ViewFormulas });
-        return;
+        return { name: Route.ViewFormulas };
     }
 
     if (!isPublicRoute && to.meta.requiresAuth && !authStore.isAuthenticated) {
-        next({ name: Route.Login, query: { redirect: to.fullPath } });
-        return;
+        return { name: Route.Login, query: { redirect: to.fullPath } };
     }
 
     if (!isPublicRoute && authStore.isAuthenticated) {
@@ -121,9 +119,6 @@ router.beforeEach(async (to, _, next) => {
     }
 
     if (to.meta.requiresAdmin && !authStore.isAdmin) {
-        next({ name: Route.ViewFormulas });
-        return;
+        return { name: Route.ViewFormulas };
     }
-
-    next();
 });
