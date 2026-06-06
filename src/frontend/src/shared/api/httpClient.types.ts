@@ -16,12 +16,16 @@ export interface HttpRequest {
 }
 
 export interface ProblemDetails {
-    traceId: string;
-    type: URL;
-    title: string;
+    traceId?: string;
+    type?: string;
+    title?: string;
+    status?: number;
+    detail?: string;
+    errors?: Record<string, Error[]>;
+}
+
+export interface ApiError extends ProblemDetails {
     status: number;
-    detail: string;
-    errors: Record<string, Error[]>;
 }
 
 interface Error {
